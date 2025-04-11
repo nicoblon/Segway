@@ -580,7 +580,7 @@ float D_Start(float v_ref, float v_prev){
 
 // Function that makes the speed decrease as we approach the wanted position
 int PID_decreasing_speed(float Kp_speed, float x, float x_ref, float max_speed){ 
-  speed = (x-x_ref)*Kp_speed;
+  speed = (x_ref-x)*Kp_speed;
   if (speed>max_speed) return (max_speed);
   else return (speed);
 }
@@ -881,6 +881,7 @@ void loop() {
     K_D=K_D_move;
   }
   pitch= ypr.pitch - pitch_bias; // Get the pitch angle. Minus comes from the change of wiring with the motor
+
     // This is were we include the pitch bias.
   if(prevSpeed==0 && prevSpeed != Speed){
     x=D_Start(Speed, prevSpeed);
@@ -889,13 +890,13 @@ void loop() {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, Speed);
   }//Add desired speed 
   prevSpeed=Speed;
+
   pitch_err = pitch +x ; //add +x
 
   x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to keep stable
 
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
-
 
   Serial.print("KP: ");
   Serial.println(K_P_move);
