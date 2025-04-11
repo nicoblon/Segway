@@ -61,6 +61,7 @@
     float MaxSpeed=0;
     float prevMaxSpeed=0;
     float x=0;
+    float Kp_speed=0;
 
     float LeftMotorAdjustment = 0.975;
     float RightMotorAdjustment = 1;
@@ -557,6 +558,14 @@ float D_Start(float v_ref, float v_prev){
   int feedback= round(D_start*(error_speed/DeltaTime));
   return(feedback);
 }
+
+// Function that makes the speed decrease as we approach the wanted position
+int PID_decreasing_speed(float Kp_speed, float x, float x_ref, float max_speed){ 
+  speed = (x-x_ref)*Kp_speed;
+  if (speed>max_speed) return (max_speed);
+  else return (speed);
+}
+
 // Function used to turn
 void Travel(int x_command, int turn_command){// instruction to the motors with the command
   if(x_command>=0){// forwards and left, forwards more than left wheel
