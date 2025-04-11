@@ -58,10 +58,15 @@
     float Kp_I = 25;//0.1;
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
-    float MaxSpeed=0;
-    float prevMaxSpeed=0;
+    float speed=0;
+    float MaxSpeed=0.055;
+    float prevSpeed=0;
     float x=0;
+<<<<<<< HEAD
     float Kp_speed=0;
+=======
+    float x_ref = 0;
+>>>>>>> 73814c2 (added kp_speed and x_ref to website)
 
     float LeftMotorAdjustment = 0.975;
     float RightMotorAdjustment = 1;
@@ -142,10 +147,11 @@
     const char* KIpos_input = "KIp";
     const char* KPyaw_input = "KPy";
     const char* KIyaw_input = "KIy";
-    const char* MaxSpeed_input = "MaxS";
     const char* LeftMotorAdjustment_input = "LMot";
     const char* RightMotorAdjustment_input = "RMot";
     const char* D_start_input = "Ds";
+    const char* X_ref_input = "Xref";
+    const char* Kp_speed_input = "KP_sp";
 
     //Timing terms
     unsigned long t_start;
@@ -164,10 +170,11 @@
   String Kp_I_val = String(Kp_I);
   String Ky_P_val = String(Ky_P);
   String Ky_I_val = String(Ky_I);
-  String Max_Speed_Val = String(MaxSpeed);
   String LeftMotorAdjustment_val = String(LeftMotorAdjustment);
   String RightMotorAdjustment_val = String(RightMotorAdjustment);
   String D_start_val = String(D_start);
+  String X_ref_val = String(x_ref);
+  String KP_speed_val = String(Kp_speed);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -233,10 +240,6 @@ const char index_html[] PROGMEM = R"rawliteral(
       <input type="number" id="KIy" value="%KIy%" min="0" max="10" step="0.01">
       <button onclick="implement_KyI()">Submit</button></p>
 
-      <p><span id="textMaxSpeedVal">Maximum Speed (current: %MaxSpeed%) </span>
-      <input type="number" id="MaxS" value="%MaxSpeed%" min="-10" max="10" step="0.01">
-      <button onclick="implement_MaxSpeed()">Submit</button></p>
-
       <p><span id="textLeftMotorAdjustmentVal">Left Motor Adjustment (current: %LeftMotorAdjustment%) </span>
       <input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001">
       <button onclick="implement_LeftMotorAdjustment()">Submit</button></p>
@@ -248,6 +251,14 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textD_startVal">D_start (current: %D_start%) </span>
       <input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1">
       <button onclick="implement_D_start()">Submit</button></p>
+
+      <p><span id="textx_refVal">Reference position (current: %x_ref%) </span>
+      <input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1">
+      <button onclick="implement_x_ref()">Submit</button></p>
+
+      <p><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%) </span>
+      <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
+      <button onclick="implement_Kp_speed()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -368,12 +379,21 @@ const char index_html[] PROGMEM = R"rawliteral(
         xhr.send();
       }
 
-      function implement_MaxSpeed(){
-          var Max_Speed_Val = document.getElementById("MaxS").value;
-          document.getElementById("textMaxSpeedVal").innerHTML = "Max Speed value (current: " + Max_Speed_Val + ") ";
-          console.log(Max_Speed_Val);
+      function implement_x_ref(){
+          var x_ref_val = document.getElementById("Xref").value;
+          document.getElementById("textx_refVal").innerHTML = "Reference position (current: " + x_ref_val + ") ";
+          console.log(x_ref_val);
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", "/maxspeed?MaxS="+Max_Speed_Val, true);
+          xhr.open("GET", "/xref?Xref="+x_ref_val, true);
+          xhr.send();
+      }
+
+      function implement_Kp_speed(){
+          var Kp_speed_val = document.getElementById("KP_sp").value;
+          document.getElementById("textKp_speedVal").innerHTML = "Reference position (current: " + Kp_speed_val + ") ";
+          console.log(Kp_speed_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/kpspeed?KP_sp="+Kp_speed_val, true);
           xhr.send();
       }
 
@@ -437,14 +457,16 @@ String processor(const String& var){
     return Ky_P_val;
   }else if (var == "KIy"){
     return Ky_I_val;
-  }else if (var == "MaxSpeed"){
-    return Max_Speed_Val;
+  }else if (var == "x_ref"){
+    return x_ref_val;
   }else if (var == "LeftMotorAdjustment"){
     return LeftMotorAdjustment_val;
   }else if (var == "RightMotorAdjustment"){
     return RightMotorAdjustment_val;
   }else if (var == "D_start"){
     return D_start_val;
+  }else if (var == "Kp_speed"){
+    return Kp_speed_val;
   }
   return String();
 }
@@ -735,13 +757,27 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
-  server.on("/maxspeed", HTTP_GET, [] (AsyncWebServerRequest *request) {
+  server.on("/xref", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
-    if (request->hasParam(MaxSpeed_input)) {
-      inputMessage = request->getParam(MaxSpeed_input)->value();
-      Max_Speed_Val = inputMessage;
-      MaxSpeed = Max_Speed_Val.toFloat();
+    if (request->hasParam(x_ref_input)) {
+      inputMessage = request->getParam(x_ref_input)->value();
+      x_ref_val = inputMessage;
+      x_ref = x_ref_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/kpspeed", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(Kp_speed_input)) {
+      inputMessage = request->getParam(Kp_speed_input)->value();
+      Kp_speed_val = inputMessage;
+      Kp_speed = Kp_speed_val.toFloat();
     }
     else {
       inputMessage = "No message sent";
@@ -840,7 +876,7 @@ void loop() {
   // }
   // else {
   // }
-  if(MaxSpeed==0){
+  if(Speed==0){
   K_P = K_P_stable; 
   K_D = K_D_stable;}
   else{
@@ -849,13 +885,13 @@ void loop() {
   }
   pitch= ypr.pitch - pitch_bias; // Get the pitch angle. Minus comes from the change of wiring with the motor
     // This is were we include the pitch bias.
-  if(prevMaxSpeed==0 && prevMaxSpeed != MaxSpeed){
-    x=D_Start(MaxSpeed, prevMaxSpeed);
+  if(prevSpeed==0 && prevSpeed != Speed){
+    x=D_Start(Speed, prevSpeed);
    }
   else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, MaxSpeed);
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, Speed);
   }//Add desired speed 
-  prevMaxSpeed=MaxSpeed;
+  prevSpeed=Speed;
   pitch_err = pitch +x ; //add +x
 
   x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to keep stable
