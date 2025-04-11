@@ -18,8 +18,8 @@
   AsyncWebServer server(80);
   // Replace with your network credentials
   // Check that the device used is also connected to the same wifi
-  const char* ssid = "Hugh G Rection";  
-  const char* password = "12345678";
+  const char* ssid = "IPhone de Nicolas";  
+  const char* password = "nicolebg";
 
 //---CONSTANTS---
     //Rayon roues
@@ -63,6 +63,7 @@
     float x=0;
     float Kp_speed=0;
     float x_ref = 0;
+    float speed_err = 0;
 
 
     float LeftMotorAdjustment = 0.975;
@@ -147,7 +148,7 @@
     const char* LeftMotorAdjustment_input = "LMot";
     const char* RightMotorAdjustment_input = "RMot";
     const char* D_start_input = "Ds";
-    const char* X_ref_input = "Xref";
+    const char* x_ref_input = "Xref";
     const char* Kp_speed_input = "KP_sp";
 
     //Timing terms
@@ -170,8 +171,8 @@
   String LeftMotorAdjustment_val = String(LeftMotorAdjustment);
   String RightMotorAdjustment_val = String(RightMotorAdjustment);
   String D_start_val = String(D_start);
-  String X_ref_val = String(x_ref);
-  String KP_speed_val = String(Kp_speed);
+  String x_ref_val = String(x_ref);
+  String Kp_speed_val = String(Kp_speed);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -387,7 +388,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
       function implement_Kp_speed(){
           var Kp_speed_val = document.getElementById("KP_sp").value;
-          document.getElementById("textKp_speedVal").innerHTML = "Reference position (current: " + Kp_speed_val + ") ";
+          document.getElementById("textKp_speedVal").innerHTML = "Speed Proportional Gain (current: " + Kp_speed_val + ") ";
           console.log(Kp_speed_val);
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/kpspeed?KP_sp="+Kp_speed_val, true);
@@ -579,9 +580,10 @@ float D_Start(float v_ref, float v_prev){
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-int PID_decreasing_speed(float Kp_speed, float x, float x_ref, float max_speed){ 
-  speed = (x_ref-x)*Kp_speed;
-  if (speed>max_speed) return (max_speed);
+int PID_decreasing_speed(float x, float x_ref, float speed_err){ 
+  speed = (x-x_ref)*Kp_speed;
+  if((x-x_ref) <= speed_err) speed = 0;
+  if (speed>MaxSpeed) return (MaxSpeed);
   else return (speed);
 }
 
@@ -873,23 +875,24 @@ void loop() {
   // }
   // else {
   // }
-  if(Speed==0){
+  if(speed==0){
   K_P = K_P_stable; 
   K_D = K_D_stable;}
   else{
     K_P= K_P_move; 
     K_D=K_D_move;
   }
-  pitch= ypr.pitch - pitch_bias; // Get the pitch angle. Minus comes from the change of wiring with the motor
+  pitch= ypr.pitch - pitch_bias;
+  speed = PID_decreasing_speed(pos, x_ref, speed_err);
 
     // This is were we include the pitch bias.
-  if(prevSpeed==0 && prevSpeed != Speed){
-    x=D_Start(Speed, prevSpeed);
+  if(prevSpeed==0 && prevSpeed != speed){
+    x=D_Start(speed, prevSpeed);
    }
   else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, Speed);
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, speed);
   }//Add desired speed 
-  prevSpeed=Speed;
+  prevSpeed=speed;
 
   pitch_err = pitch +x ; //add +x
 
@@ -898,10 +901,10 @@ void loop() {
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.print("KP: ");
-  Serial.println(K_P_move);
-  Serial.print("KD: ");
-  Serial.println(K_D_move);
+  Serial.print("K_speed: ");
+  Serial.println(Kp_speed);
+  Serial.print("x_ref: ");
+  Serial.println(x_ref);
 
 
   t_end=micros();
