@@ -58,15 +58,12 @@
     float Kp_I = 25;//0.1;
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
-    float speed=0;
     float MaxSpeed=0.055;
     float prevSpeed=0;
     float x=0;
-<<<<<<< HEAD
     float Kp_speed=0;
-=======
     float x_ref = 0;
->>>>>>> 73814c2 (added kp_speed and x_ref to website)
+
 
     float LeftMotorAdjustment = 0.975;
     float RightMotorAdjustment = 1;
