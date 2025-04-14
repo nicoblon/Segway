@@ -65,6 +65,7 @@
     float x_ref = 0;
     float speed_err = 0;
     float refSpeed = 0;
+    float position_error = 0;
 
 
     float LeftMotorAdjustment = 0.975;
@@ -152,6 +153,7 @@
     const char* x_ref_input = "Xref";
     const char* Kp_speed_input = "KP_sp";
     const char* speed_err_input = "Sp_err";
+    const char* position_error_input = "pos_err";
 
     //Timing terms
     unsigned long t_start;
@@ -176,6 +178,7 @@
   String x_ref_val = String(x_ref);
   String Kp_speed_val = String(Kp_speed);
   String speed_err_val = String(speed_err);
+  String position_err_val = String(position_error);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -264,6 +267,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
       <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
       <button onclick="implement_speed_err()">Submit</button></p>
+
+      <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
+      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01">
+      <button onclick="implement_position_error()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -438,6 +445,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_position_error(){
+          var position_error_val = document.getElementById("pos_err").value;
+          document.getElementById("textposition_errorVal").innerHTML = "Position Error (current: " + position_error_val + ") ";
+          console.log(position_error_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/position_error?pos_err="+position_error_val, true);
+          xhr.send();
+      }
+
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/cmmd?cmd=" + cmmd, true);
@@ -591,9 +607,9 @@ float D_Start(float v_ref, float v_prev){
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-int PID_decreasing_speed(float x, float x_ref, float speed_err){ 
+int PID_decreasing_speed(float x, float x_ref){ 
   float feedback = (x-x_ref)*Kp_speed;
-  if((x-x_ref) <= speed_err) feedback = 0;
+  if((x-x_ref) <= position_error) feedback = 0;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   else return (feedback);
 }
@@ -896,7 +912,7 @@ void loop() {
   }
 
   pitch = ypr.pitch - pitch_bias;
-  refSpeed = PID_decreasing_speed(pos, x_ref, speed_err);
+  refSpeed = PID_decreasing_speed(pos, x_ref);
 
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
@@ -913,6 +929,12 @@ void loop() {
 
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
+
+  Serial.print("Speed Error: ");
+  Serial.println(speed_err);
+  Serial.print("Position Error: ");
+  Serial.println(position_error);
+
 
   t_end=micros();
   t_loop=t_end-t_start;
