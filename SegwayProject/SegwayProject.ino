@@ -671,9 +671,6 @@ float averageNonZero(float arr[], int size) {
     return count ? sum / count : 0.0;
 }
 
-int Setspeed(float position, float ref_position){
-
-}
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200); 
