@@ -178,7 +178,7 @@
   String x_ref_val = String(x_ref);
   String Kp_speed_val = String(Kp_speed);
   String speed_err_val = String(speed_err);
-  String position_err_val = String(position_error);
+  String position_error_val = String(position_error);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -441,7 +441,7 @@ const char index_html[] PROGMEM = R"rawliteral(
           document.getElementById("textspeed_errVal").innerHTML = "Speed Error (current: " + speed_err_val + ") ";
           console.log(speed_err_val);
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", "/speed_err?Sp_err="+speed_err_val, true);
+          xhr.open("GET", "/Speed_err?Sp_err="+speed_err_val, true);
           xhr.send();
       }
 
@@ -450,7 +450,7 @@ const char index_html[] PROGMEM = R"rawliteral(
           document.getElementById("textposition_errorVal").innerHTML = "Position Error (current: " + position_error_val + ") ";
           console.log(position_error_val);
           var xhr = new XMLHttpRequest();
-          xhr.open("GET", "/position_error?pos_err="+position_error_val, true);
+          xhr.open("GET", "/Position_error?pos_err="+position_error_val, true);
           xhr.send();
       }
 
@@ -497,6 +497,10 @@ String processor(const String& var){
     return D_start_val;
   }else if (var == "Kp_speed"){
     return Kp_speed_val;
+  }else if(var == "speed_err"){
+    return speed_err_val;
+  }else if(var == "position_error"){
+    return position_error_val;
   }
   return String();
 }
@@ -847,6 +851,34 @@ void setup() {
       inputMessage = request->getParam(D_start_input)->value();
       D_start_val = inputMessage;
       D_start = D_start_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/Speed_err", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(speed_err_input)) {
+      inputMessage = request->getParam(speed_err_input)->value();
+      speed_err_val = inputMessage;
+      speed_err = speed_err_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/Position_error", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(position_error_input)) {
+      inputMessage = request->getParam(position_error_input)->value();
+      position_error_val = inputMessage;
+      position_error = position_error_val.toFloat();
     }
     else {
       inputMessage = "No message sent";
