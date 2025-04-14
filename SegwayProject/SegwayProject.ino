@@ -630,6 +630,10 @@ float D_Start(float v_ref, float v_prev){
   return(feedback);
 }
 
+float D_stop(float power, float refSpeed){
+  //ajouter que en qd power change de signe on met un spike qui est en fonction de la vitesse (refSpeed?)
+}
+
 // Function that makes the speed decrease as we approach the wanted position
 float P_decreasing_speed(float x, float x_ref){
   float t = x_ref - x;
