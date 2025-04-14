@@ -59,13 +59,15 @@
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
     float MaxSpeed=0.055;
+    float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
-    float Kp_speed=0;
+    float Kp_speed=10;
+    float Ki_speed=0;
     float x_ref = 0;
-    float speed_err = 0;
+    float speed_err = 0.05;
     float refSpeed = 0;
-    float position_error = 0;
+    float position_error = 25;
 
 
     float LeftMotorAdjustment = 0.975;
@@ -79,6 +81,7 @@
     float sum_error=0; 
     float sum_p_error=0;
     float sum_y_error=0;
+    float sum_power=0;
 
     float pos_ref = 0;
     float pitch = 0.0; 
@@ -154,6 +157,7 @@
     const char* Kp_speed_input = "KP_sp";
     const char* speed_err_input = "Sp_err";
     const char* position_error_input = "pos_err";
+    const char* Ki_speed_input = "KI_sp";
 
     //Timing terms
     unsigned long t_start;
@@ -179,6 +183,7 @@
   String Kp_speed_val = String(Kp_speed);
   String speed_err_val = String(speed_err);
   String position_error_val = String(position_error);
+  String Ki_speed_val = String(Ki_speed);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -264,12 +269,16 @@ const char index_html[] PROGMEM = R"rawliteral(
       <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
       <button onclick="implement_Kp_speed()">Submit</button></p>
 
+      <p><span id="textKi_speedVal">Speed Integral Gain (current: %Ki_speed%) </span>
+      <input type="number" id="KI_sp" value="%Ki_speed%" min="0" max="10000" step="1">
+      <button onclick="implement_Ki_speed()">Submit</button></p>
+
       <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
       <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
       <button onclick="implement_speed_err()">Submit</button></p>
 
       <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
-      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01">
+      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1">
       <button onclick="implement_position_error()">Submit</button></p>
 
       <div class="container">
@@ -409,6 +418,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_Ki_speed(){
+          var Ki_speed_val = document.getElementById("KI_sp").value;
+          document.getElementById("textKi_speedVal").innerHTML = "Speed Integral Gain (current: " + Ki_speed_val + ") ";
+          console.log(Ki_speed_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/kispeed?KI_sp="+Ki_speed_val, true);
+          xhr.send();
+      }
+
       function implement_LeftMotorAdjustment(){
           var LeftMotorAdjustment_val = document.getElementById("LMot").value;
           document.getElementById("textLeftMotorAdjustmentVal").innerHTML = "Left Motor Adjustment Percentage (current: " + LeftMotorAdjustment_val + ") ";
@@ -501,6 +519,8 @@ String processor(const String& var){
     return speed_err_val;
   }else if(var == "position_error"){
     return position_error_val;
+  }else if (var == "Ki_speed"){
+    return Ki_speed_val;
   }
   return String();
 }
@@ -611,10 +631,15 @@ float D_Start(float v_ref, float v_prev){
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-int PID_decreasing_speed(float x, float x_ref){ 
-  float feedback = (x-x_ref)*Kp_speed;
-  if((x-x_ref) <= position_error) feedback = 0;
+float P_decreasing_speed(float x, float x_ref){
+  float t = x_ref - x;
+  float power = t - sgn(t)*position_error;
+  if(abs(t) <= position_error) power = 0;
+  sum_power*=0.95;
+  sum_power+=power;
+  float feedback = power*Kp_speed+Ki_speed*sum_power;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
   else return (feedback);
 }
 
@@ -816,6 +841,20 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/kispeed", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(Ki_speed_input)) {
+      inputMessage = request->getParam(Ki_speed_input)->value();
+      Ki_speed_val = inputMessage;
+      Ki_speed = Ki_speed_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
   server.on("/leftmotoradjustment", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
@@ -927,15 +966,9 @@ void loop() {
     long now; 
   } 
 
-  // if (start){
-  //   K_P = K_P_move; 
-  //   K_D = K_D_move;
-  //   pitch_ref = PI_p_feedback(Kp_P, Kp_I, pos, pos_ref);
-  //   yaw_cmmd = -PI_y_feedback(Ky_P, Ky_I, yaw, yaw_ref);
-  // }
-  // else {
-  // }
-  if(abs(average_speed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
+  refSpeed = P_decreasing_speed(pos, x_ref);
+
+  if(abs(refSpeed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
     K_P = K_P_stable; 
     K_D = K_D_stable;
   }else{
@@ -944,7 +977,6 @@ void loop() {
   }
 
   pitch = ypr.pitch - pitch_bias;
-  refSpeed = PID_decreasing_speed(pos, x_ref);
 
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
@@ -953,7 +985,7 @@ void loop() {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);
   }//Add desired speed 
 
-  prevSpeed=speed;
+  prevSpeed=refSpeed;
 
   pitch_err = pitch +x ; //add +x
 
@@ -962,11 +994,7 @@ void loop() {
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.print("Speed Error: ");
-  Serial.println(speed_err);
-  Serial.print("Position Error: ");
-  Serial.println(position_error);
-
+  Serial.println(Ki_speed);
 
   t_end=micros();
   t_loop=t_end-t_start;
