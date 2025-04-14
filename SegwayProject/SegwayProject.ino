@@ -64,6 +64,7 @@
     float Kp_speed=0;
     float x_ref = 0;
     float speed_err = 0;
+    float refSpeed = 0;
 
 
     float LeftMotorAdjustment = 0.975;
@@ -150,6 +151,7 @@
     const char* D_start_input = "Ds";
     const char* x_ref_input = "Xref";
     const char* Kp_speed_input = "KP_sp";
+    const char* speed_err_input = "Sp_err";
 
     //Timing terms
     unsigned long t_start;
@@ -173,6 +175,7 @@
   String D_start_val = String(D_start);
   String x_ref_val = String(x_ref);
   String Kp_speed_val = String(Kp_speed);
+  String speed_err_val = String(speed_err);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -257,6 +260,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%) </span>
       <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
       <button onclick="implement_Kp_speed()">Submit</button></p>
+
+      <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
+      <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
+      <button onclick="implement_speed_err()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -422,6 +429,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_speed_err(){
+          var speed_err_val = document.getElementById("Sp_err").value;
+          document.getElementById("textspeed_errVal").innerHTML = "Speed Error (current: " + speed_err_val + ") ";
+          console.log(speed_err_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/speed_err?Sp_err="+speed_err_val, true);
+          xhr.send();
+      }
+
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/cmmd?cmd=" + cmmd, true);
@@ -556,12 +572,7 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){
   sum_error *= 0.98; //leaky integrator
   
   K_prop=K_P*error; //proportional part of the controller
-  if (start){ //check whether the robot is moving or not to activate/deactivate the integral term 
-    K_int=0;
-  }
-  else {
-    K_int=K_I*sum_error; //integral part of the controller 
-  }
+  K_int=K_I*sum_error; //integral part of the controller 
   K_diff=K_D*(error-pre_error); //differential part of the controller  
   
   pre_error=error; //previous error update  
@@ -572,19 +583,19 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){
  
   return (feedback);  
 }
+
 float D_Start(float v_ref, float v_prev){
   float error_speed= v_ref-v_prev;
-
   int feedback= round(D_start*(error_speed/DeltaTime));
   return(feedback);
 }
 
 // Function that makes the speed decrease as we approach the wanted position
 int PID_decreasing_speed(float x, float x_ref, float speed_err){ 
-  speed = (x-x_ref)*Kp_speed;
-  if((x-x_ref) <= speed_err) speed = 0;
-  if (speed>MaxSpeed) return (MaxSpeed);
-  else return (speed);
+  float feedback = (x-x_ref)*Kp_speed;
+  if((x-x_ref) <= speed_err) feedback = 0;
+  if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  else return (feedback);
 }
 
 // Function used to turn
@@ -614,6 +625,7 @@ float averageNonZero(float arr[], int size) {
     for (int i = 0; i < size; i++) (arr[i] != 0) ? (sum += arr[i], count++) : 0;
     return count ? sum / count : 0.0;
 }
+
 int Setspeed(float position, float ref_position){
 
 }
@@ -875,23 +887,24 @@ void loop() {
   // }
   // else {
   // }
-  if(speed==0){
-  K_P = K_P_stable; 
-  K_D = K_D_stable;}
-  else{
+  if(abs(average_speed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
+    K_P = K_P_stable; 
+    K_D = K_D_stable;
+  }else{
     K_P= K_P_move; 
     K_D=K_D_move;
   }
-  pitch= ypr.pitch - pitch_bias;
-  speed = PID_decreasing_speed(pos, x_ref, speed_err);
 
-    // This is were we include the pitch bias.
-  if(prevSpeed==0 && prevSpeed != speed){
-    x=D_Start(speed, prevSpeed);
+  pitch = ypr.pitch - pitch_bias;
+  refSpeed = PID_decreasing_speed(pos, x_ref, speed_err);
+
+  if(prevSpeed==0 && prevSpeed != refSpeed){
+    x=D_Start(refSpeed, prevSpeed);
    }
   else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, speed);
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);
   }//Add desired speed 
+
   prevSpeed=speed;
 
   pitch_err = pitch +x ; //add +x
@@ -900,12 +913,6 @@ void loop() {
 
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
-
-  Serial.print("K_speed: ");
-  Serial.println(Kp_speed);
-  Serial.print("x_ref: ");
-  Serial.println(x_ref);
-
 
   t_end=micros();
   t_loop=t_end-t_start;
