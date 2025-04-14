@@ -18,8 +18,8 @@
   AsyncWebServer server(80);
   // Replace with your network credentials
   // Check that the device used is also connected to the same wifi
-  const char* ssid = "Hugh G Rection";  
-  const char* password = "12345678";
+  const char* ssid = "IPhone de Nicolas";  
+  const char* password = "nicolebg";
 
 //---CONSTANTS---
     //Rayon roues
@@ -63,6 +63,9 @@
     float x=0;
     float Kp_speed=0;
     float x_ref = 0;
+    float speed_err = 0;
+    float refSpeed = 0;
+    float position_error = 0;
 
 
     float LeftMotorAdjustment = 0.975;
@@ -147,8 +150,10 @@
     const char* LeftMotorAdjustment_input = "LMot";
     const char* RightMotorAdjustment_input = "RMot";
     const char* D_start_input = "Ds";
-    const char* X_ref_input = "Xref";
+    const char* x_ref_input = "Xref";
     const char* Kp_speed_input = "KP_sp";
+    const char* speed_err_input = "Sp_err";
+    const char* position_error_input = "pos_err";
 
     //Timing terms
     unsigned long t_start;
@@ -170,8 +175,10 @@
   String LeftMotorAdjustment_val = String(LeftMotorAdjustment);
   String RightMotorAdjustment_val = String(RightMotorAdjustment);
   String D_start_val = String(D_start);
-  String X_ref_val = String(x_ref);
-  String KP_speed_val = String(Kp_speed);
+  String x_ref_val = String(x_ref);
+  String Kp_speed_val = String(Kp_speed);
+  String speed_err_val = String(speed_err);
+  String position_error_val = String(position_error);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -256,6 +263,14 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%) </span>
       <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
       <button onclick="implement_Kp_speed()">Submit</button></p>
+
+      <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
+      <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
+      <button onclick="implement_speed_err()">Submit</button></p>
+
+      <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
+      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01">
+      <button onclick="implement_position_error()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -387,7 +402,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
       function implement_Kp_speed(){
           var Kp_speed_val = document.getElementById("KP_sp").value;
-          document.getElementById("textKp_speedVal").innerHTML = "Reference position (current: " + Kp_speed_val + ") ";
+          document.getElementById("textKp_speedVal").innerHTML = "Speed Proportional Gain (current: " + Kp_speed_val + ") ";
           console.log(Kp_speed_val);
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/kpspeed?KP_sp="+Kp_speed_val, true);
@@ -418,6 +433,24 @@ const char index_html[] PROGMEM = R"rawliteral(
           console.log(D_start_val);
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/d_start?Ds="+D_start_val, true);
+          xhr.send();
+      }
+
+      function implement_speed_err(){
+          var speed_err_val = document.getElementById("Sp_err").value;
+          document.getElementById("textspeed_errVal").innerHTML = "Speed Error (current: " + speed_err_val + ") ";
+          console.log(speed_err_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/Speed_err?Sp_err="+speed_err_val, true);
+          xhr.send();
+      }
+
+      function implement_position_error(){
+          var position_error_val = document.getElementById("pos_err").value;
+          document.getElementById("textposition_errorVal").innerHTML = "Position Error (current: " + position_error_val + ") ";
+          console.log(position_error_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/Position_error?pos_err="+position_error_val, true);
           xhr.send();
       }
 
@@ -464,6 +497,10 @@ String processor(const String& var){
     return D_start_val;
   }else if (var == "Kp_speed"){
     return Kp_speed_val;
+  }else if(var == "speed_err"){
+    return speed_err_val;
+  }else if(var == "position_error"){
+    return position_error_val;
   }
   return String();
 }
@@ -555,12 +592,7 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){
   sum_error *= 0.98; //leaky integrator
   
   K_prop=K_P*error; //proportional part of the controller
-  if (start){ //check whether the robot is moving or not to activate/deactivate the integral term 
-    K_int=0;
-  }
-  else {
-    K_int=K_I*sum_error; //integral part of the controller 
-  }
+  K_int=K_I*sum_error; //integral part of the controller 
   K_diff=K_D*(error-pre_error); //differential part of the controller  
   
   pre_error=error; //previous error update  
@@ -571,18 +603,19 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){
  
   return (feedback);  
 }
+
 float D_Start(float v_ref, float v_prev){
   float error_speed= v_ref-v_prev;
-
   int feedback= round(D_start*(error_speed/DeltaTime));
   return(feedback);
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-int PID_decreasing_speed(float Kp_speed, float x, float x_ref, float max_speed){ 
-  speed = (x_ref-x)*Kp_speed;
-  if (speed>max_speed) return (max_speed);
-  else return (speed);
+int PID_decreasing_speed(float x, float x_ref){ 
+  float feedback = (x-x_ref)*Kp_speed;
+  if((x-x_ref) <= position_error) feedback = 0;
+  if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  else return (feedback);
 }
 
 // Function used to turn
@@ -822,6 +855,34 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/Speed_err", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(speed_err_input)) {
+      inputMessage = request->getParam(speed_err_input)->value();
+      speed_err_val = inputMessage;
+      speed_err = speed_err_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/Position_error", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(position_error_input)) {
+      inputMessage = request->getParam(position_error_input)->value();
+      position_error_val = inputMessage;
+      position_error = position_error_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
   server.begin(); 
   K_P = K_P_stable; 
   K_D = K_D_stable;
@@ -871,23 +932,25 @@ void loop() {
   // }
   // else {
   // }
-  if(Speed==0){
-  K_P = K_P_stable; 
-  K_D = K_D_stable;}
-  else{
+  if(abs(average_speed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
+    K_P = K_P_stable; 
+    K_D = K_D_stable;
+  }else{
     K_P= K_P_move; 
     K_D=K_D_move;
   }
-  pitch= ypr.pitch - pitch_bias; // Get the pitch angle. Minus comes from the change of wiring with the motor
 
-    // This is were we include the pitch bias.
-  if(prevSpeed==0 && prevSpeed != Speed){
-    x=D_Start(Speed, prevSpeed);
+  pitch = ypr.pitch - pitch_bias;
+  refSpeed = PID_decreasing_speed(pos, x_ref);
+
+  if(prevSpeed==0 && prevSpeed != refSpeed){
+    x=D_Start(refSpeed, prevSpeed);
    }
   else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, Speed);
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);
   }//Add desired speed 
-  prevSpeed=Speed;
+
+  prevSpeed=speed;
 
   pitch_err = pitch +x ; //add +x
 
@@ -896,10 +959,10 @@ void loop() {
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.print("KP: ");
-  Serial.println(K_P_move);
-  Serial.print("KD: ");
-  Serial.println(K_D_move);
+  Serial.print("Speed Error: ");
+  Serial.println(speed_err);
+  Serial.print("Position Error: ");
+  Serial.println(position_error);
 
 
   t_end=micros();
