@@ -74,6 +74,10 @@
     float RightMotorAdjustment = 1;
 
     float D_start = 1000;
+    float D_stop = 0;
+
+    float power = 0;
+    float prev_power = 0;
 
   // Tracking of error 
     float pitch_err=2.25;
@@ -158,6 +162,7 @@
     const char* speed_err_input = "Sp_err";
     const char* position_error_input = "pos_err";
     const char* Ki_speed_input = "KI_sp";
+    const char* D_stop_input = "Dsp";
 
     //Timing terms
     unsigned long t_start;
@@ -184,6 +189,7 @@
   String speed_err_val = String(speed_err);
   String position_error_val = String(position_error);
   String Ki_speed_val = String(Ki_speed);
+  String D_stop_val = String(D_stop);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -260,6 +266,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textD_startVal">D_start (current: %D_start%) </span>
       <input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1">
       <button onclick="implement_D_start()">Submit</button></p>
+
+      <p><span id="textD_stopVal">D_stop (current: %D_stop%) </span>
+      <input type="number" id="Dsp" value="%D_stop%" min="0" max="10000" step="1">
+      <button onclick="implement_D_stop()">Submit</button></p>
 
       <p><span id="textx_refVal">Reference position (current: %x_ref%) </span>
       <input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1">
@@ -454,6 +464,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_D_stop(){
+          var D_stop_val = document.getElementById("Dsp").value;
+          document.getElementById("textD_stopVal").innerHTML = "D_stop Value (current: " + D_stop_val + ") ";
+          console.log(D_stop_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/d_stop?Dsp="+D_stop_val, true);
+          xhr.send();
+      }
+
       function implement_speed_err(){
           var speed_err_val = document.getElementById("Sp_err").value;
           document.getElementById("textspeed_errVal").innerHTML = "Speed Error (current: " + speed_err_val + ") ";
@@ -521,6 +540,8 @@ String processor(const String& var){
     return position_error_val;
   }else if (var == "Ki_speed"){
     return Ki_speed_val;
+  }else if(var == "D_stop"){
+    return D_stop_val;
   }
   return String();
 }
@@ -630,14 +651,20 @@ float D_Start(float v_ref, float v_prev){
   return(feedback);
 }
 
-float D_stop(float power, float refSpeed){
+float D_stop(){
   //ajouter que en qd power change de signe on met un spike qui est en fonction de la vitesse (refSpeed?)
+  int x = 1;
+  if(sgn(power)>0){
+    x = -1
+  }
+  int feedback = sgn(x)*round(D_stop*()); // on doit faire un pic en fonction de la vitesse, mais on prend speed ou refSpeed? Aussi, pour le derivative term, on prend quoi comme erreur?
+  return feedback;
 }
 
 // Function that makes the speed decrease as we approach the wanted position
 float P_decreasing_speed(float x, float x_ref){
   float t = x_ref - x;
-  float power = t - sgn(t)*position_error;
+  power = t - sgn(t)*position_error;
   if(abs(t) <= position_error) power = 0;
   sum_power*=0.95;
   sum_power+=power;
@@ -898,6 +925,20 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/d_stop", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(D_stop_input)) {
+      inputMessage = request->getParam(D_stop_input)->value();
+      D_stop_val = inputMessage;
+      D_stop = D_stop_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
   server.on("/Speed_err", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
@@ -934,12 +975,17 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  // counting time
   t_start=micros();
+
+  // check accelerometer 
   if (bno08x.wasReset()) { 
     Serial.print("sensor was reset "); 
     setReports(reportType, reportIntervalUs); 
   } 
 
+  // read encoders and convert to radians
   rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
   rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
 
@@ -947,11 +993,16 @@ void loop() {
   pos_1 = rad1 * R;
   pos_2 = rad2 * R;
   pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
-  speed= (pos-prev_pos)/DeltaTime;
-  updateSpeedBuffer(speed); //adds value to speedBuffer list
-  average_speed=averageNonZero(speedBuffer, BUFFER_SIZE); //Calcul de la vitesse moyenne sur au plus 10 valeurs
-  prev_pos=pos;
 
+  // Calculating the current speed 
+  speed= (pos-prev_pos)/DeltaTime;
+  // Updating buffer and calculating average speed
+  updateSpeedBuffer(speed); //adds value to speedBuffer list
+  average_speed=averageNonZero(speedBuffer, BUFFER_SIZE); // calculating average speed over the last 10 values
+  
+  prev_pos=pos; // updating previous position variable
+
+  // Read accelerometer and transforming into an angle
   if (bno08x.getSensorEvent(&sensorValue)) { 
     // in this demo only one report type will be received depending on FAST_MODE define (above) 
     switch (sensorValue.sensorId) { 
@@ -967,9 +1018,12 @@ void loop() {
     long now; 
   } 
 
+  // Calculate reference speed with respect to a reference position
   refSpeed = P_decreasing_speed(pos, x_ref);
+  prev_power = power; // updating previous power variable
 
-  if(abs(refSpeed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
+  // Setting PID constants (stability vs movement)
+  if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
     K_P = K_P_stable; 
     K_D = K_D_stable;
   }else{
@@ -977,26 +1031,28 @@ void loop() {
     K_D=K_D_move;
   }
 
-  pitch = ypr.pitch - pitch_bias;
+  pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
+  // Create an input spike when starting motion
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
    }
   else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
 
-  prevSpeed=refSpeed;
+  prevSpeed=refSpeed; // updating previous speed variable
 
-  pitch_err = pitch +x ; //add +x
+  pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
-  x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to keep stable
+  x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.println(Ki_speed);
+  Serial.println(Ki_speed); 
 
+  // time management, making every loop iteration exactly 10ms
   t_end=micros();
   t_loop=t_end-t_start;
   delayMicroseconds(10000-t_loop);
