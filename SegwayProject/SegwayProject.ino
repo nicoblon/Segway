@@ -62,8 +62,8 @@
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
-    float Kp_speed=10;
-    float Ki_speed=0;
+    float Kp_speed=0.25;
+    float Ki_speed=0.005;
     float x_ref = 0;
     float speed_err = 0.05;
     float refSpeed = 0;
@@ -651,14 +651,12 @@ float D_Start(float v_ref, float v_prev){
   return(feedback);
 }
 
-float D_stop(float , float){
-  //ajouter que en qd power change de signe on met un spike qui est en fonction de la vitesse (refSpeed?)
-  int x = 1;
-  if(sgn(power)>0){
-    x = -1
-  }
-  int feedback = sgn(x)*round(D_stop*()); // on doit faire un pic en fonction de la vitesse, mais on prend speed ou refSpeed? Aussi, pour le derivative term, on prend quoi comme erreur?
-  return feedback;
+
+float D_Stop(float power, float refSpeed){
+  int feedback = sgn(power)*round(D_stop*power*refSpeed); // on doit faire un pic en fonction de la vitesse, mais on prend speed ou refSpeed? Aussi, pour le derivative term, on prend quoi comme erreur?
+  if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
+  else return (feedback);
 }
 
 // Function that makes the speed decrease as we approach the wanted position
@@ -666,7 +664,7 @@ float P_decreasing_speed(float x, float x_ref){
   float t = x_ref - x;
   power = t - sgn(t)*position_error;
   if(abs(t) <= position_error) power = 0;
-  sum_power*=0.95;
+  sum_power*=0.9;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
@@ -1033,14 +1031,15 @@ void loop() {
 
   pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
+  int powerSign = 0;
+  if(power == 0 && (abs(prev_power - power) > 0)) powerSign = 1;
+
   // Create an input spike when starting motion
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
-   }
-  else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
-    x=D_stop(average_speed, prevSpeed);
-  }
-  else{
+  }else if(powerSign){
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) + D_Stop(power, refSpeed);
+  }else{
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
 
@@ -1053,11 +1052,8 @@ void loop() {
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.println(Ki_speed); 
-
   // time management, making every loop iteration exactly 10ms
   t_end=micros();
   t_loop=t_end-t_start;
   delayMicroseconds(10000-t_loop);
 }
-//PipiFesse
