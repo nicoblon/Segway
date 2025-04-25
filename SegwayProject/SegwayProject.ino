@@ -163,6 +163,8 @@
     const char* position_error_input = "pos_err";
     const char* Ki_speed_input = "KI_sp";
     const char* D_stop_input = "Dsp";
+    const char* MaxSpeed_input = "MaxS";
+
 
     //Timing terms
     unsigned long t_start;
@@ -190,6 +192,7 @@
   String position_error_val = String(position_error);
   String Ki_speed_val = String(Ki_speed);
   String D_stop_val = String(D_stop);
+  String MaxSpeed_val = String(MaxSpeed);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -290,6 +293,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
       <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1">
       <button onclick="implement_position_error()">Submit</button></p>
+
+      p><span id="textmaxspeedVal">Max Speed (current: %MaxSpeed%) </span>
+      <input type="number" id="MaxS" value="%MaxSpeed%" min="0" max="100" step="0.01">
+      <button onclick="implement_maxspeed()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -491,6 +498,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_maxspeed(){
+          var MaxSpeed_val = document.getElementById("MaxS").value;
+          document.getElementById("textmaxspeedVal").innerHTML = "Max Speed (current: " + MaxSpeed_val + ") ";
+          console.log(MaxSpeed_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/MaxSpeed?MaxS="+MaxSpeed_val, true);
+          xhr.send();
+      }
+
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/cmmd?cmd=" + cmmd, true);
@@ -542,6 +558,8 @@ String processor(const String& var){
     return Ki_speed_val;
   }else if(var == "D_stop"){
     return D_stop_val;
+  }else if(var == "MaxSpeed"){
+    return MaxSpeed_val;
   }
   return String();
 }
@@ -667,6 +685,13 @@ float P_decreasing_speed(float x, float x_ref){
   sum_power*=0.9;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
+
+  /* Is this any useful?
+  if (abs(t) <= position_error+20){
+    feedback*=0.75;
+  }
+  */
+
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
   else return (feedback);
@@ -958,6 +983,20 @@ void setup() {
       inputMessage = request->getParam(position_error_input)->value();
       position_error_val = inputMessage;
       position_error = position_error_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/MaxSpeed", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(MaxSpeed_input)) {
+      inputMessage = request->getParam(MaxSpeed_input)->value();
+      MaxSpeed_val = inputMessage;
+      MaxSpeed = MaxSpeed_val.toFloat();
     }
     else {
       inputMessage = "No message sent";
