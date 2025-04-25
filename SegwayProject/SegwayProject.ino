@@ -651,7 +651,7 @@ float D_Start(float v_ref, float v_prev){
   return(feedback);
 }
 
-float D_stop(){
+float D_stop(float , float){
   //ajouter que en qd power change de signe on met un spike qui est en fonction de la vitesse (refSpeed?)
   int x = 1;
   if(sgn(power)>0){
@@ -1037,6 +1037,9 @@ void loop() {
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
    }
+  else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
+    x=D_stop(average_speed, prevSpeed);
+  }
   else{
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
