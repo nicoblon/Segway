@@ -25,7 +25,6 @@
     //Rayon roues
     const int R = 3.2; //[cm]
     const float rayon = 18/2; //[cm] =  wheelbase/2
-
     const float pi = 3.14159265;
 
     //Rapport de réduction du gearhead
@@ -58,20 +57,29 @@
     float Kp_I = 25;//0.1;
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
-    float MaxSpeed=0.055;
+
+    float MaxSpeed=0.035;   //0.055
+    float MinSpeed=0.02;
+
     float prevSpeed=0;
     float x=0;
     float Kp_speed=0;
     float x_ref = 0;
-    float speed_err = 0;
+    float speed_err = 0.025;
     float refSpeed = 0;
-    float position_error = 0;
+    float position_error = 10;
 
 
     float LeftMotorAdjustment = 0.975;
     float RightMotorAdjustment = 1;
 
     float D_start = 1000;
+
+    float D_stop = 500;
+
+    float power = 0;
+    float prev_power = 0;
+
 
   // Tracking of error 
     float pitch_err=2.25;
@@ -108,7 +116,7 @@
     int x_cmmd_prev = 0;
     int avail_turn; //command left available to turn
 
-    int turn_cmmd;
+    int turn_cmmd = 0;
     int yaw_cmmd;
 
     int command;
@@ -155,6 +163,12 @@
     const char* speed_err_input = "Sp_err";
     const char* position_error_input = "pos_err";
 
+    const char* Ki_speed_input = "KI_sp";
+    const char* D_stop_input = "Dsp";
+    const char* MaxSpeed_input = "MSpeed";
+    const char* turn_cmmd_input = "t_c";
+
+
     //Timing terms
     unsigned long t_start;
     unsigned long t_end;
@@ -179,6 +193,10 @@
   String Kp_speed_val = String(Kp_speed);
   String speed_err_val = String(speed_err);
   String position_error_val = String(position_error);
+  String Ki_speed_val = String(Ki_speed);
+  String D_stop_val = String(D_stop);
+  String MaxSpeed_val = String(MaxSpeed);
+  String turn_cmmd_val = String(turn_cmmd);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -271,6 +289,15 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
       <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01">
       <button onclick="implement_position_error()">Submit</button></p>
+
+
+      <p><span id="textmaxspeedVal">Max Speed (current: %MaxSpeed%) </span>
+      <input type="number" id="MSpeed" value="%MaxSpeed%" min="0" max="1" step="0.001">
+      <button onclick="implement_maxspeed()">Submit</button></p>
+
+      <p><span id ="textturn_cmmdVal">Turn Command (current: %turn_cmmd%) </span>
+      <input type="number" id="t_c" value="%turn_cmmd%" min="-180" max="180" step="1">
+      <button onclick="implement_turn_cmmd()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -454,6 +481,26 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+
+      function implement_maxspeed(){
+          var MaxSpeed_val = document.getElementById("MSpeed").value;
+          document.getElementById("textmaxspeedVal").innerHTML = "Max Speed (current: " + MaxSpeed_val + ") ";
+          console.log(MaxSpeed_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/MaxSpeed?MSpeed="+MaxSpeed_val, true);
+          xhr.send();
+      }
+
+      function implement_turn_cmmd(){
+        var turn_cmmd_val = document.getElementById("t_c").value;
+        document.getElementById("textturn_cmmdVal").innerHTML = "Turn Command (current: " + turn_cmmd_val + ") ";
+        console.log(turn_cmmd_val);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/turn_cmmd?t_c="+turn_cmmd_val, true);
+        xhr.send();
+      }
+
+
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/cmmd?cmd=" + cmmd, true);
@@ -501,6 +548,14 @@ String processor(const String& var){
     return speed_err_val;
   }else if(var == "position_error"){
     return position_error_val;
+  }else if (var == "Ki_speed"){
+    return Ki_speed_val;
+  }else if(var == "D_stop"){
+    return D_stop_val;
+  }else if(var == "MaxSpeed"){
+    return MaxSpeed_val;
+  }else if(var == "turn_cmmd"){
+    return turn_cmmd_val;
   }
   return String();
 }
@@ -610,27 +665,55 @@ float D_Start(float v_ref, float v_prev){
   return(feedback);
 }
 
+
+float D_Stop(float power, float refSpeed){
+  int feedback = sgn(power)*round(D_stop*power*refSpeed);
+  if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
+  else return (feedback);
+}
+
 // Function that makes the speed decrease as we approach the wanted position
-int PID_decreasing_speed(float x, float x_ref){ 
-  float feedback = (x-x_ref)*Kp_speed;
-  if((x-x_ref) <= position_error) feedback = 0;
+float P_decreasing_speed(float x, float x_ref){
+  float t = x_ref - x;
+  power = t - sgn(t)*position_error;
+  if(abs(t) <= position_error) power = 0;
+  sum_power*=0.9;
+  sum_power+=power;
+  float feedback = power*Kp_speed+Ki_speed*sum_power;
+
+
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   else return (feedback);
 }
 
 // Function used to turn
 void Travel(int x_command, int turn_command){// instruction to the motors with the command
-  if(x_command>=0){// forwards and left, forwards more than left wheel
-    analogWrite(M2A, LeftMotorAdjustment*x_command);
-    analogWrite(M2B, 0);
-    analogWrite(M1A, 0);
-    analogWrite(M1B, RightMotorAdjustment*x_command);
+  l=x_command-turn_command/2; //left wheel
+  r=x_command+turn_command/2; //right wheel
+  if(l>=0 && r>=0){//forward and left, forwards more than left wheel
+    analogWrite(M1A,l*LeftMotorAdjustment);
+    analogWrite(M2A,r*RightMotorAdjustment);
+    analogWrite(M1B,0);
+    analogWrite(M2B,0);
   }
-  else{ 
-    analogWrite(M2A, 0);
-    analogWrite(M2B, -LeftMotorAdjustment*x_command);
-    analogWrite(M1A, -RightMotorAdjustment*x_command);
-    analogWrite(M1B, 0);  
+  else if(l<0 && r>=0){
+    analogWrite(M1A,0);
+    analogWrite(M2A,r*RightMotorAdjustment);
+    analogWrite(M1B,-l*LeftMotorAdjustment);
+    analogWrite(M2B,0);
+  }
+  else if(l>=0 && r>0){
+    analogWrite(M1A,l*LeftMotorAdjustment);
+    analogWrite(M2A,0);
+    analogWrite(M1B,0);
+    analogWrite(M2B,-r*RightMotorAdjustment);
+  }
+  else if(l<0 && r<0){
+    analogWrite(M1A,0);
+    analogWrite(M2A,0);
+    analogWrite(M1B,-l*LeftMotorAdjustment);
+    analogWrite(M2B,-r*RightMotorAdjustment);
   }
 }
 //function that updates the oldest term in the speed array
@@ -885,6 +968,35 @@ void setup() {
     }
     request->send(200, "text/plain", "OK");
   });
+
+
+  server.on("/MaxSpeed", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(MaxSpeed_input)) {
+      inputMessage = request->getParam(MaxSpeed_input)->value();
+      MaxSpeed_val = inputMessage;
+      MaxSpeed = MaxSpeed_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/turn_cmmd", HTTP_GET, [] (AsyncWebServerRequest *request){
+    String inputMessage;
+    if(request->hasParam(turn_cmmd_input)) {
+      inputMessage = request->getParam(turn_cmmd_input)->value();
+      turn_cmmd_val = inputMessage;
+      turn_cmmd = turn_cmmd_val.toFloat();
+    }
+    else{
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
 
   server.begin(); 
   K_P = K_P_stable; 
