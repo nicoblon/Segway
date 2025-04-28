@@ -729,9 +729,6 @@ float averageNonZero(float arr[], int size) {
     return count ? sum / count : 0.0;
 }
 
-int Setspeed(float position, float ref_position){
-
-}
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200); 
@@ -1006,12 +1003,17 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  // counting time
   t_start=micros();
+
+  // check accelerometer 
   if (bno08x.wasReset()) { 
     Serial.print("sensor was reset "); 
     setReports(reportType, reportIntervalUs); 
   } 
 
+  // read encoders and convert to radians
   rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
   rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
 
@@ -1019,11 +1021,16 @@ void loop() {
   pos_1 = rad1 * R;
   pos_2 = rad2 * R;
   pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
-  speed= (pos-prev_pos)/DeltaTime;
-  updateSpeedBuffer(speed); //adds value to speedBuffer list
-  average_speed=averageNonZero(speedBuffer, BUFFER_SIZE); //Calcul de la vitesse moyenne sur au plus 10 valeurs
-  prev_pos=pos;
 
+  // Calculating the current speed 
+  speed= (pos-prev_pos)/DeltaTime;
+  // Updating buffer and calculating average speed
+  updateSpeedBuffer(speed); //adds value to speedBuffer list
+  average_speed=averageNonZero(speedBuffer, BUFFER_SIZE); // calculating average speed over the last 10 values
+
+  prev_pos=pos; // updating previous position variable
+
+  // Read accelerometer and transforming into an angle
   if (bno08x.getSensorEvent(&sensorValue)) { 
     // in this demo only one report type will be received depending on FAST_MODE define (above) 
     switch (sensorValue.sensorId) { 
@@ -1039,15 +1046,12 @@ void loop() {
     long now; 
   } 
 
-  // if (start){
-  //   K_P = K_P_move; 
-  //   K_D = K_D_move;
-  //   pitch_ref = PI_p_feedback(Kp_P, Kp_I, pos, pos_ref);
-  //   yaw_cmmd = -PI_y_feedback(Ky_P, Ky_I, yaw, yaw_ref);
-  // }
-  // else {
-  // }
-  if(abs(average_speed) < speed_err){     // si la vitesse moyenne est moins de 5% de la vitesse maximale, on cherche la stabilization
+  // Calculate reference speed with respect to a reference position
+  refSpeed = P_decreasing_speed(pos, x_ref);
+  prev_power = power; // updating previous power variable
+
+  // Setting PID constants (stability vs movement)
+  if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
     K_P = K_P_stable; 
     K_D = K_D_stable;
   }else{
@@ -1055,33 +1059,31 @@ void loop() {
     K_D=K_D_move;
   }
 
-  pitch = ypr.pitch - pitch_bias;
-  refSpeed = PID_decreasing_speed(pos, x_ref);
+  pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
+  int powerSign = 0;
+  if(power == 0 && (abs(prev_power - power) > 0)) powerSign = 1;
+
+  // Create an input spike when starting motion
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
-   }
-  else{
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);
+  }else if(powerSign){
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) + D_Stop(power, refSpeed);
+  }else{
+    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
 
-  prevSpeed=speed;
+  prevSpeed=refSpeed; // updating previous speed variable
 
-  pitch_err = pitch +x ; //add +x
+  pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
-  x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to keep stable
+  x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
-  
+
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.print("Speed Error: ");
-  Serial.println(speed_err);
-  Serial.print("Position Error: ");
-  Serial.println(position_error);
-
-
+  // time management, making every loop iteration exactly 10ms
   t_end=micros();
   t_loop=t_end-t_start;
   delayMicroseconds(10000-t_loop);
 }
-//PipiFesse
