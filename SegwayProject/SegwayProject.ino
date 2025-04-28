@@ -210,78 +210,66 @@ const char index_html[] PROGMEM = R"rawliteral(
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>PID web tuning</title>
       <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f7f7f7;
+          margin: 20px;
+        }
+        h2 {
+          text-align: center;
+        }
+        .param {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #ffffff;
+          padding: 8px;
+          margin: 8px 0;
+          border-radius: 8px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .param span {
+          flex: 2;
+          font-size: 14px;
+          padding-right: 10px;
+        }
+        .param input {
+          flex: 1;
+          padding: 5px;
+          font-size: 13px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          margin-right: 10px;
+        }
+        .param button {
+          background-color: #ff69b4;
+          border: none;
+          padding: 6px 12px;
+          font-size: 13px;
+          border-radius: 4px;
+          cursor: pointer;
+          color: white;
+        }
         .container {
           display: flex;
           justify-content: center;
           align-items: center;
-          height: 10vh;
+          flex-wrap: wrap;
+          margin-top: 20px;
         }
         .button {
-          font-size: 24px;
-          padding: 16px;
+          font-size: 16px;
+          padding: 10px 20px;
           margin: 8px;
+          border-radius: 8px;
+          background-color: #003366;
+          color: white;
+          border: none;
+          cursor: pointer;
         }
       </style>
     </head>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #f7f7f7;
-        margin: 20px;
-      }
-      h2 {
-        text-align: center;
-      }
-      .param {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #ffffff;
-        padding: 8px;
-        margin: 8px 0;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-      .param span {
-        flex: 2;
-        font-size: 14px;
-        padding-right: 10px;
-      }
-      .param input {
-        flex: 1;
-        padding: 5px;
-        font-size: 13px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        margin-right: 10px;
-      }
-      .param button {
-        background-color: #ff69b4;
-        border: none;
-        padding: 6px 12px;
-        font-size: 13px;
-        border-radius: 4px;
-        cursor: pointer;
-        color: white;
-      }
-      .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-top: 20px;
-      }
-      .button {
-        font-size: 16px;
-        padding: 10px 20px;
-        margin: 8px;
-        border-radius: 8px;
-        background-color: #003366;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-    </style>
+    
     <body>
       <h2>PID web tuning</h2>
 
@@ -304,6 +292,7 @@ const char index_html[] PROGMEM = R"rawliteral(
       <div class="param"><span id="textLeftMotorAdjustmentVal">Left Motor Adjustment (current: %LeftMotorAdjustment%)</span><input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001"><button onclick="implement_LeftMotorAdjustment()">Submit</button></div>
       <div class="param"><span id="textRightMotorAdjustmentVal">Right Motor Adjustment (current: %RightMotorAdjustment%)</span><input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.001"><button onclick="implement_RightMotorAdjustment()">Submit</button></div>
       <div class="param"><span id="textD_startVal">D_start (current: %D_start%)</span><input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1"><button onclick="implement_D_start()">Submit</button></div>
+      <div class="param"><span id="textD_stopVal">D_stop (current: %D_stop%)</span><input type="number" id="Dsp" value="%D_stop%" min="0" max="100" step="0.1"><button onclick="implement_D_stop()">Submit</button></div>
       <div class="param"><span id="textx_refVal">Reference position (current: %x_ref%)</span><input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1"><button onclick="implement_x_ref()">Submit</button></div>
       <div class="param"><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%)</span><input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1"><button onclick="implement_Kp_speed()">Submit</button></div>
       <div class="param"><span id="textspeed_errVal">Speed Error (current: %speed_err%)</span><input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01"><button onclick="implement_speed_err()">Submit</button></div>
@@ -705,15 +694,16 @@ float D_Start(float v_ref, float v_prev){
 }
 
 
-float D_Stop(){
-  int feedback = sgn(power)*round(D_stop*power*refSpeed);
+float D_Stop(float power, float refSpeed){
+  int feedback = round(D_stop*power*refSpeed);
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
   else return (feedback);
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-float P_decreasing_speed(){
+float P_decreasing_speed(float power, float sum_power){
+  if(abs(t) <= position_error) power = 0;
   sum_power*=0.9;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
@@ -729,9 +719,9 @@ void resetVariables(){
   x_ref = 0;
   encoder1.setCount(0);
   encoder2.setCount(0);
-  for(int i = 0; i <= 9; i++){
+  /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
-  }
+  }*/
   pos_1 = 0;
   pos_2 = 0;
   pos = 0;
@@ -740,7 +730,7 @@ void resetVariables(){
   power = 0;
   sum_power = 0;
   sum_error = 0;
-  sum_p_error = 0;
+  //sum_p_error = 0;
   resetCount++;
   return;
 }
@@ -761,7 +751,7 @@ void Travel(int x_command, int turn_command){// instruction to the motors with t
     analogWrite(M1B,r*RightMotorAdjustment);
     analogWrite(M2B,-l*LeftMotorAdjustment);
   }
-  else if(l>=0 && r>0){
+  else if(l>=0 && r<0){
     analogWrite(M1A,l*LeftMotorAdjustment);
     analogWrite(M2A,-r*RightMotorAdjustment);
     analogWrite(M1B,0);
@@ -1141,7 +1131,7 @@ void loop() {
   
   x_ref_prev = x_ref;
   // Calculate reference speed with respect to a reference position
-  refSpeed = P_decreasing_speed();
+  refSpeed = P_decreasing_speed(power, sum_power);
   
 
   // Setting PID constants (stability vs movement)
@@ -1162,7 +1152,7 @@ void loop() {
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
   }else if(powerSign){
-    x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop();
+    x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop(power, refSpeed);
   }else{
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
