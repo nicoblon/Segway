@@ -63,8 +63,11 @@
 
     float prevSpeed=0;
     float x=0;
-    float Kp_speed=0;
+    float t=0;
+    float Kp_speed=0.25;
+    float Ki_speed=0.005;
     float x_ref = 0;
+    float x_ref_prev = 0;
     float speed_err = 0.025;
     float refSpeed = 0;
     float position_error = 10;
@@ -74,11 +77,15 @@
     float RightMotorAdjustment = 1;
 
     float D_start = 1000;
-
     float D_stop = 500;
 
+    float sum_power=0;
     float power = 0;
     float prev_power = 0;
+
+    bool resetALL = false;
+    bool hasReset = true;
+    uint8_t resetCount = 0;
 
 
   // Tracking of error 
@@ -100,7 +107,7 @@
     float Kp_prop;
     float Kp_int;
     float Ky_prop;
-    float Ky_int;
+    float  nt;
     
   // Declaring variables that used to be declared in void loop to make faster
 
@@ -126,9 +133,6 @@
     float pos;
     float yaw;
 
-    // Boolean used to reset all the quantities giving informations 
-    //on the segway relative position
-    bool reset = false;
 
     // Counters 
     int counterugh = 0;
@@ -219,85 +223,94 @@ const char index_html[] PROGMEM = R"rawliteral(
         }
       </style>
     </head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 20px;
+      }
+      h2 {
+        text-align: center;
+      }
+      .param {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ffffff;
+        padding: 8px;
+        margin: 8px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .param span {
+        flex: 2;
+        font-size: 14px;
+        padding-right: 10px;
+      }
+      .param input {
+        flex: 1;
+        padding: 5px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+      .param button {
+        background-color: #ff69b4;
+        border: none;
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 4px;
+        cursor: pointer;
+        color: white;
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+      .button {
+        font-size: 16px;
+        padding: 10px 20px;
+        margin: 8px;
+        border-radius: 8px;
+        background-color: #003366;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+    </style>
     <body>
       <h2>PID web tuning</h2>
+
+      <h3>Live Data</h3>
+      <p>Position: <span id="posVal">Loading...</span> cm</p>
+      <p>Reference Speed: <span id="refSpeedVal">Loading...</span> cm/s</p>
+      <p>Reset Count: <span id="resetCountVal">Loading...</span></p>
+
       
-      <p><span id="textPropValS">Proportional gain for stabilization(current: %PPS%) </span>
-      <input type="number" id="KPS" value="%PPS%" min="0" max="100" step="1">
-      <button onclick="implement_P_S()">Submit</button></p>
+      <div class="param"><span id="textPropValS">Proportional gain for stabilization (current: %PPS%)</span><input type="number" id="KPS" value="%PPS%" min="0" max="100" step="1"><button onclick="implement_P_S()">Submit</button></div>
+      <div class="param"><span id="textPropValM">Proportional gain for motion (current: %PPM%)</span><input type="number" id="KPM" value="%PPM%" min="0" max="100" step="1"><button onclick="implement_P_M()">Submit</button></div>
+      <div class="param"><span id="textIntVal">Integral gain (current: %II%)</span><input type="number" id="KI" value="%II%" min="0" max="10" step="0.1"><button onclick="implement_I()">Submit</button></div>
+      <div class="param"><span id="textDerValS">Derivative gain for stabilization (current: %DDS%)</span><input type="number" id="KDS" value="%DDS%" min="0" max="100" step="1"><button onclick="implement_D_S()">Submit</button></div>
+      <div class="param"><span id="textDerValM">Derivative gain for motion (current: %DDM%)</span><input type="number" id="KDM" value="%DDM%" min="0" max="100" step="1"><button onclick="implement_D_M()">Submit</button></div>
+      <div class="param"><span id="textPitchBiasVal">Pitch Bias (current: %BB%)</span><input type="number" id="PB" value="%BB%" min="-45" max="45" step="0.1"><button onclick="implement_B()">Submit</button></div>
+      <div class="param"><span id="textKPpVal">Pos. Proportional gain (current: %KPp%)</span><input type="number" id="KPp" value="%KPp%" min="0" max="100" step="0.01"><button onclick="implement_KpP()">Submit</button></div>
+      <div class="param"><span id="textKIpVal">Pos. Integral gain (current: %KIp%)</span><input type="number" id="KIp" value="%KIp%" min="0" max="10" step="0.01"><button onclick="implement_KpI()">Submit</button></div>
+      <div class="param"><span id="textKPyVal">Yaw Proportional gain (current: %KPy%)</span><input type="number" id="KPy" value="%KPy%" min="0" max="10" step="0.01"><button onclick="implement_KyP()">Submit</button></div>
+      <div class="param"><span id="textKIyVal">Yaw Integral gain (current: %KIy%)</span><input type="number" id="KIy" value="%KIy%" min="0" max="10" step="0.01"><button onclick="implement_KyI()">Submit</button></div>
+      <div class="param"><span id="textLeftMotorAdjustmentVal">Left Motor Adjustment (current: %LeftMotorAdjustment%)</span><input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001"><button onclick="implement_LeftMotorAdjustment()">Submit</button></div>
+      <div class="param"><span id="textRightMotorAdjustmentVal">Right Motor Adjustment (current: %RightMotorAdjustment%)</span><input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.001"><button onclick="implement_RightMotorAdjustment()">Submit</button></div>
+      <div class="param"><span id="textD_startVal">D_start (current: %D_start%)</span><input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1"><button onclick="implement_D_start()">Submit</button></div>
+      <div class="param"><span id="textx_refVal">Reference position (current: %x_ref%)</span><input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1"><button onclick="implement_x_ref()">Submit</button></div>
+      <div class="param"><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%)</span><input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1"><button onclick="implement_Kp_speed()">Submit</button></div>
+      <div class="param"><span id="textspeed_errVal">Speed Error (current: %speed_err%)</span><input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01"><button onclick="implement_speed_err()">Submit</button></div>
+      <div class="param"><span id="textposition_errorVal">Position Error (current: %position_error%)</span><input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01"><button onclick="implement_position_error()">Submit</button></div>
+      <div class="param"><span id="textmaxspeedVal">Max Speed (current: %MaxSpeed%)</span><input type="number" id="MSpeed" value="%MaxSpeed%" min="0" max="1" step="0.001"><button onclick="implement_maxspeed()">Submit</button></div>
+      <div class="param"><span id="textturn_cmmdVal">Turn Command (current: %turn_cmmd%)</span><input type="number" id="t_c" value="%turn_cmmd%" min="-180" max="180" step="1"><button onclick="implement_turn_cmmd()">Submit</button></div>
 
-      <p><span id="textPropValM">Proportional gain for motion(current: %PPM%) </span>
-      <input type="number" id="KPM" value="%PPM%" min="0" max="100" step="1">
-      <button onclick="implement_P_M()">Submit</button></p>
-      
-      <p><span id="textIntVal">Integral gain (current: %II%) </span>
-      <input type="number" id="KI" value="%II%" min="0" max="10" step="0.1">
-      <button onclick="implement_I()">Submit</button></p>
-      
-      <p><span id="textDerValS">Derivative gain for stabilization(current: %DDS%) </span>
-      <input type="number" id="KDS" value="%DDS%" min="0" max="100" step="1">
-      <button onclick="implement_D_S()">Submit</button></p>
-
-      <p><span id="textDerValM">Derivative gain for motion(current: %DDM%) </span>
-      <input type="number" id="KDM" value="%DDM%" min="0" max="100" step="1">
-      <button onclick="implement_D_M()">Submit</button></p>
-      
-      <p><span id="textPitchBiasVal">Pitch Bias (current: %BB%) </span>
-      <input type="number" id="PB" value="%BB%" min="-45" max="45" step="0.1">
-      <button onclick="implement_B()">Submit</button></p>
-
-      <p><span id="textKPpVal">Pos. Proportional gain (current: %KPp%) </span>
-      <input type="number" id="KPp" value="%KPp%" min="0" max="100" step="0.01">
-      <button onclick="implement_KpP()">Submit</button></p>
-
-      <p><span id="textKIpVal">Pos. Integral gain (current: %KIp%) </span>
-      <input type="number" id="KIp" value="%KIp%" min="0" max="10" step="0.01">
-      <button onclick="implement_KpI()">Submit</button></p>
-
-      <p><span id="textKPyVal">Yaw Proportional gain (current: %KPy%) </span>
-      <input type="number" id="KPy" value="%KPy%" min="0" max="10" step="0.01">
-      <button onclick="implement_KyP()">Submit</button></p>
-
-      <p><span id="textKIyVal">Yaw Integral gain (current: %KIy%) </span>
-      <input type="number" id="KIy" value="%KIy%" min="0" max="10" step="0.01">
-      <button onclick="implement_KyI()">Submit</button></p>
-
-      <p><span id="textLeftMotorAdjustmentVal">Left Motor Adjustment (current: %LeftMotorAdjustment%) </span>
-      <input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001">
-      <button onclick="implement_LeftMotorAdjustment()">Submit</button></p>
-
-      <p><span id="textRightMotorAdjustmentVal">Right Motor Adjustment (current: %RightMotorAdjustment%) </span>
-      <input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.001">
-      <button onclick="implement_RightMotorAdjustment()">Submit</button></p>
-
-      <p><span id="textD_startVal">D_start (current: %D_start%) </span>
-      <input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1">
-      <button onclick="implement_D_start()">Submit</button></p>
-
-      <p><span id="textx_refVal">Reference position (current: %x_ref%) </span>
-      <input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1">
-      <button onclick="implement_x_ref()">Submit</button></p>
-
-      <p><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%) </span>
-      <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
-      <button onclick="implement_Kp_speed()">Submit</button></p>
-
-      <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
-      <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
-      <button onclick="implement_speed_err()">Submit</button></p>
-
-      <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
-      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="0.01">
-      <button onclick="implement_position_error()">Submit</button></p>
-
-
-      <p><span id="textmaxspeedVal">Max Speed (current: %MaxSpeed%) </span>
-      <input type="number" id="MSpeed" value="%MaxSpeed%" min="0" max="1" step="0.001">
-      <button onclick="implement_maxspeed()">Submit</button></p>
-
-      <p><span id ="textturn_cmmdVal">Turn Command (current: %turn_cmmd%) </span>
-      <input type="number" id="t_c" value="%turn_cmmd%" min="-180" max="180" step="1">
-      <button onclick="implement_turn_cmmd()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -463,6 +476,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_D_stop(){
+        var D_stop_val = document.getElementById("Dsp").value;
+        document.getElementById("textD_stopVal").innerHTML = "D_stop Value (current: " + D_stop_val + ") ";
+        console.log(D_stop_val);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/d_stop?Dsp="+D_stop_val, true);
+        xhr.send();
+       }
+
       function implement_speed_err(){
           var speed_err_val = document.getElementById("Sp_err").value;
           document.getElementById("textspeed_errVal").innerHTML = "Speed Error (current: " + speed_err_val + ") ";
@@ -499,6 +521,23 @@ const char index_html[] PROGMEM = R"rawliteral(
         xhr.open("GET", "/turn_cmmd?t_c="+turn_cmmd_val, true);
         xhr.send();
       }
+
+      function updateData(){
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/data", true);
+        xhr.onreadystatechange = function(){
+          if(xhr.readyState == 4 && xhr.status == 200){
+            var obj = JSON.parse(xhr.responseText);
+            document.getElementById("posVal").innerHTML = obj.pos.toFixed(2);
+            document.getElementById("refSpeedVal").innerHTML = obj.refSpeed.toFixed(4);
+            document.getElementById("resetCountVal").innerHTML = obj.resetCount.toFixed(1);
+          }
+        };
+        xhr.send();
+      }
+
+      // Refresh every 200 milliseconds (adjust if needed)
+      setInterval(updateData, 200);
 
 
       function sendcmmd(cmmd){
@@ -666,7 +705,7 @@ float D_Start(float v_ref, float v_prev){
 }
 
 
-float D_Stop(float power, float refSpeed){
+float D_Stop(){
   int feedback = sgn(power)*round(D_stop*power*refSpeed);
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
@@ -674,17 +713,36 @@ float D_Stop(float power, float refSpeed){
 }
 
 // Function that makes the speed decrease as we approach the wanted position
-float P_decreasing_speed(float x, float x_ref){
-  float t = x_ref - x;
-  power = t - sgn(t)*position_error;
-  if(abs(t) <= position_error) power = 0;
+float P_decreasing_speed(){
   sum_power*=0.9;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
-
-
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  else if(abs(feedback)<MinSpeed) return(sgn(feedback)*MinSpeed);
   else return (feedback);
+}
+
+void resetVariables(){
+  if(hasReset){
+    return;
+  }
+  x_ref = 0;
+  encoder1.setCount(0);
+  encoder2.setCount(0);
+  for(int i = 0; i <= 9; i++){
+    updateSpeedBuffer(0);
+  }
+  pos_1 = 0;
+  pos_2 = 0;
+  pos = 0;
+  K_P = K_P_stable;
+  K_D = K_D_stable;
+  power = 0;
+  sum_power = 0;
+  sum_error = 0;
+  sum_p_error = 0;
+  resetCount++;
+  return;
 }
 
 // Function used to turn
@@ -692,28 +750,28 @@ void Travel(int x_command, int turn_command){// instruction to the motors with t
   l=x_command-turn_command/2; //left wheel
   r=x_command+turn_command/2; //right wheel
   if(l>=0 && r>=0){//forward and left, forwards more than left wheel
-    analogWrite(M1A,l*LeftMotorAdjustment);
-    analogWrite(M2A,r*RightMotorAdjustment);
-    analogWrite(M1B,0);
+    analogWrite(M1A,0);
+    analogWrite(M2A,l*LeftMotorAdjustment);
+    analogWrite(M1B,r*RightMotorAdjustment);
     analogWrite(M2B,0);
   }
   else if(l<0 && r>=0){
     analogWrite(M1A,0);
-    analogWrite(M2A,r*RightMotorAdjustment);
-    analogWrite(M1B,-l*LeftMotorAdjustment);
-    analogWrite(M2B,0);
+    analogWrite(M2A,0);
+    analogWrite(M1B,r*RightMotorAdjustment);
+    analogWrite(M2B,-l*LeftMotorAdjustment);
   }
   else if(l>=0 && r>0){
     analogWrite(M1A,l*LeftMotorAdjustment);
-    analogWrite(M2A,0);
+    analogWrite(M2A,-r*RightMotorAdjustment);
     analogWrite(M1B,0);
-    analogWrite(M2B,-r*RightMotorAdjustment);
+    analogWrite(M2B,0);
   }
   else if(l<0 && r<0){
-    analogWrite(M1A,0);
+    analogWrite(M1A,-r*RightMotorAdjustment);
     analogWrite(M2A,0);
-    analogWrite(M1B,-l*LeftMotorAdjustment);
-    analogWrite(M2B,-r*RightMotorAdjustment);
+    analogWrite(M1B,0);
+    analogWrite(M2B,-l*LeftMotorAdjustment);
   }
 }
 //function that updates the oldest term in the speed array
@@ -938,6 +996,20 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/d_stop", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(D_stop_input)) {
+      inputMessage = request->getParam(D_stop_input)->value();
+      D_stop_val = inputMessage;
+      D_stop = D_stop_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+   });
+
   server.on("/Speed_err", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
@@ -994,6 +1066,13 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = "{\"pos\":" + String(pos) + 
+                  ",\"refSpeed\":" + String(refSpeed) + 
+                  ",\"resetCount\":" + String(resetCount) + "}";
+    request->send(200, "application/json", json);
+  });
+
 
   server.begin(); 
   K_P = K_P_stable; 
@@ -1046,9 +1125,24 @@ void loop() {
     long now; 
   } 
 
-  // Calculate reference speed with respect to a reference position
-  refSpeed = P_decreasing_speed(pos, x_ref);
   prev_power = power; // updating previous power variable
+  t = x_ref - pos;  //position error
+  power = t - sgn(t)*position_error; // calculating power
+
+  if (abs(t) <= position_error && !hasReset){
+    resetVariables();
+  }
+  if(x_ref != x_ref_prev){
+    hasReset = false;
+  }
+  if(abs(t) <= position_error){
+    hasReset = true;
+  }
+  
+  x_ref_prev = x_ref;
+  // Calculate reference speed with respect to a reference position
+  refSpeed = P_decreasing_speed();
+  
 
   // Setting PID constants (stability vs movement)
   if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -1068,7 +1162,7 @@ void loop() {
   if(prevSpeed==0 && prevSpeed != refSpeed){
     x=D_Start(refSpeed, prevSpeed);
   }else if(powerSign){
-    x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) + D_Stop(power, refSpeed);
+    x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop();
   }else{
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
@@ -1080,7 +1174,7 @@ void loop() {
   x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
 
-  Travel(x_cmmd, 0); // Function that instructs motors what to do
+  Travel(x_cmmd, turn_cmmd); // Function that instructs motors what to do
 
   // time management, making every loop iteration exactly 10ms
   t_end=micros();
