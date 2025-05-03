@@ -37,8 +37,8 @@ const int M2A = 15;
 const int M2B = 32;
 
 // Constantes de vitesse
-#define BUFFER_SIZE 10  // Store last 10 speed values
-const int DeltaTime = 10;
+#define BUFFER_SIZE 5  // Store last 10 speed values
+int DeltaTime = 10;
 float speedBuffer[BUFFER_SIZE] = { 0 };  // Initialize with zeros
 int speedIndex = 0;                      // Track the position to overwrite
 float average_speed = 0;
@@ -71,6 +71,8 @@ float x_ref_prev = 0;
 float speed_err = 0.025;
 float refSpeed = 0;
 float position_error = 10;
+
+float timeOverflow = 10000;
 
 
 float LeftMotorAdjustment = 0.975;
@@ -209,18 +211,65 @@ const char index_html[] PROGMEM = R"rawliteral(
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>PID web tuning</title>
       <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f7f7f7;
+          margin: 20px;
+        }
+        h2 {
+          text-align: center;
+        }
+        .param {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: #ffffff;
+          padding: 8px;
+          margin: 8px 0;
+          border-radius: 8px;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .param span {
+          flex: 2;
+          font-size: 14px;
+          padding-right: 10px;
+        }
+        .param input {
+          flex: 1;
+          padding: 5px;
+          font-size: 13px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          margin-right: 10px;
+        }
+        .param button {
+          background-color: #ff69b4;
+          border: none;
+          padding: 6px 12px;
+          font-size: 13px;
+          border-radius: 4px;
+          cursor: pointer;
+          color: white;
+        }
         .container {
           display: flex;
           justify-content: center;
           align-items: center;
-          height: 10vh;
+          flex-wrap: wrap;
+          margin-top: 20px;
         }
         .button {
-          font-size: 24px;
-          padding: 16px;
+          font-size: 16px;
+          padding: 10px 20px;
           margin: 8px;
+          border-radius: 8px;
+          background-color: #003366;
+          color: white;
+          border: none;
+          cursor: pointer;
         }
       </style>
+
 
     </head>
     
@@ -644,7 +693,7 @@ float P_decreasing_speed(float power, float sum_power) {
 }
 
 void resetVariables() {
-  if (hasReset) {
+  /*if (hasReset) {
     return;
   }
   x_ref = 0;
@@ -653,21 +702,22 @@ void resetVariables() {
   /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
   }*/
-  pos_1 = 0;
+  /*pos_1 = 0;
   pos_2 = 0;
   pos = 0;
+  prev_pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
   power = 0;
   sum_power = 0;
   sum_error = 0;
   //sum_p_error = 0;
-  resetCount++;
+  resetCount++;*/
   return;
 }
 
 // Function used to turn
-void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
+/*void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
   l = x_command - turn_command / 2;             //left wheel
   r = x_command + turn_command / 2;             //right wheel
   if (l >= 0 && r >= 0) {                       //forward and left, forwards more than left wheel
@@ -691,7 +741,23 @@ void Travel(int x_command, int turn_command) {  // instruction to the motors wit
     analogWrite(M1B, 0);
     analogWrite(M2B, -l * LeftMotorAdjustment);
   }
+}*/
+
+void Travel(int x_command, int turn_command){// instruction to the motors with the command
+  if(x_command>=0){// forwards and left, forwards more than left wheel
+    analogWrite(M2A, LeftMotorAdjustment*x_command);
+    analogWrite(M2B, 0);
+    analogWrite(M1A, 0);
+    analogWrite(M1B, RightMotorAdjustment*x_command);
+  }
+  else{ 
+    analogWrite(M2A, 0);
+    analogWrite(M2B, -LeftMotorAdjustment*x_command);
+    analogWrite(M1A, -RightMotorAdjustment*x_command);
+    analogWrite(M1B, 0);  
+  }
 }
+
 //function that updates the oldest term in the speed array
 void updateSpeedBuffer(float newSpeed) {
   speedBuffer[speedIndex] = newSpeed;           // Replace oldest value
@@ -1036,7 +1102,7 @@ void loop() {
   // Calculate reference speed with respect to a reference position
   refSpeed = P_decreasing_speed(power, sum_power);
 
-
+  /*
   // Setting PID constants (stability vs movement)
   if (abs(refSpeed) < speed_err) {  // if the speed is less than x% of the maximum speed -> stabilize
     K_P = K_P_stable;
@@ -1044,7 +1110,10 @@ void loop() {
   } else {
     K_P = K_P_move;
     K_D = K_D_move;
-  }
+  }*/
+
+  K_P = K_P_stable;
+  K_D = K_D_stable;
 
   pitch = ypr.pitch - pitch_bias;  // adjusting pitch with bias
 
@@ -1054,8 +1123,8 @@ void loop() {
   // Create an input spike when starting motion
   if (prevSpeed == 0 && prevSpeed != refSpeed) {
     x = D_Start(refSpeed, prevSpeed);
-  } else if (powerSign) {
-    x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop(power, refSpeed);
+  //} else if (powerSign) {
+    //x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop(power, refSpeed);
   } else {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);  // calculating reference angle based on reference speed
   }                                                          //Add desired speed
@@ -1072,9 +1141,10 @@ void loop() {
   // time management, making every loop iteration exactly 10ms
   t_end = micros();
   t_loop = t_end - t_start;
-  
-  if(t_loop > 10000){
-    Serial.println(t_loop);
+
+  while(t_loop > timeOverflow){
+    timeOverflow+=100;
   }
-  delayMicroseconds(10000 - t_loop);
+  DeltaTime = timeOverflow/1000;
+  delayMicroseconds(timeOverflow - t_loop);
 }
