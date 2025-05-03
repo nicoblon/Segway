@@ -38,12 +38,12 @@ const int M2B = 32;
 
 // Constantes de vitesse
 #define BUFFER_SIZE 10  // Store last 10 speed values
-const int DeltaTime = 10;
+int DeltaTime = 10;
 float speedBuffer[BUFFER_SIZE] = { 0 };  // Initialize with zeros
 int speedIndex = 0;                      // Track the position to overwrite
 float average_speed = 0;
 float speed = 0;
-
+float timer= 10000;
 // Controllers parameters
 float K_P = 0;  //value that switches between K_P_stable and K_P_move, not web modifiable
 float K_P_stable = 14;
@@ -658,9 +658,9 @@ void resetVariables() {
   pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
-  power = 0;
-  sum_power = 0;
-  sum_error = 0;
+  //power = 0;
+  //sum_power = 0;
+  //sum_error = 0;
   //sum_p_error = 0;
   resetCount++;
   return;
@@ -1055,7 +1055,7 @@ void loop() {
   if (prevSpeed == 0 && prevSpeed != refSpeed) {
     x = D_Start(refSpeed, prevSpeed);
   } else if (powerSign) {
-    x = /*PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed) +*/ D_Stop(power, refSpeed);
+    //x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed)  D_Stop(power, refSpeed);
   } else {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);  // calculating reference angle based on reference speed
   }                                                          //Add desired speed
@@ -1072,9 +1072,9 @@ void loop() {
   // time management, making every loop iteration exactly 10ms
   t_end = micros();
   t_loop = t_end - t_start;
-  
-  if(t_loop > 10000){
-    Serial.println(t_loop);
+  while(t_loop>timer){
+    timer+100;
   }
-  delayMicroseconds(10000 - t_loop);
+  DeltaTime = timer/1000;
+  delayMicroseconds(timer - t_loop);
 }
