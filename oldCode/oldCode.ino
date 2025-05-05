@@ -696,9 +696,9 @@ void resetVariables() {
   prev_pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
-  power = 0;
-  sum_power = 0;
-  sum_error = 0;
+  //power = 0;
+  //sum_power = 0;
+  //sum_error = 0;
   //sum_p_error = 0;
   refSpeed=0;
   resetCount++;
@@ -1056,18 +1056,19 @@ void loop() {
 
   if (abs(t) <= position_error && !hasReset) {
     resetVariables();
+    hasReset = true;
   }
+  else{
   if (x_ref != x_ref_prev) {
     hasReset = false;
     K_P = K_P_move;
     K_D = K_D_move;
   }
   if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
-    MaxSpeed=0.02;
+    MaxSpeed=0.025;
   }
   if (abs(t) <= position_error) {
     hasReset = true;
-    MaxSpeed = 0.035;
   }
 
   x_ref_prev = x_ref;
@@ -1097,7 +1098,7 @@ void loop() {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
   }//Add desired speed 
 
-  prevSpeed=refSpeed; // updating previous speed variable
+  prevSpeed=average_speed; // updating previous speed variable
 
   pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
@@ -1115,6 +1116,8 @@ void loop() {
     timeOverflow+=100;
   }
   DeltaTime = timeOverflow/1000;
-  delayMicroseconds(timeOverflow - t_loop);
+  delayMicroseconds(timeOverflow - t_loop);}  
+  t_end=micros();
+
 }
 //PipiFesse

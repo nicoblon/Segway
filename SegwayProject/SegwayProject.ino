@@ -712,7 +712,7 @@ void resetVariables() {
   power = 0;
   sum_power = 0;
   sum_error = 0;
-  //sum_p_error = 0;
+  sum_p_error = 0;
   resetCount++;
   return;
 }
@@ -1136,7 +1136,7 @@ void loop() {
     x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed);  // calculating reference angle based on reference speed
   }                                                          //Add desired speed
 
-  prevSpeed = refSpeed;  // updating previous speed variable
+  prevSpeed = average_speed;  // updating previous speed variable
 
   pitch_err = pitch + x;  // adding reference angle to current angle with bias
 
