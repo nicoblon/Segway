@@ -18,8 +18,8 @@ ESP32Encoder encoder2;
 AsyncWebServer server(80);
 // Replace with your network credentials
 // Check that the device used is also connected to the same wifi
-const char* ssid = "IPhone de Nicolas";
-const char* password = "nicolebg";
+const char* ssid = "Hugh G Rection";
+const char* password = "12345678";
 
 //---CONSTANTS---
 //Rayon roues
@@ -694,7 +694,7 @@ float P_decreasing_speed(float power, float sum_power) {
 }
 
 void resetVariables() {
-  /*if (hasReset) {
+  if (hasReset) {
     return;
   }
   x_ref = 0;
@@ -703,17 +703,17 @@ void resetVariables() {
   /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
   }*/
-  /*pos_1 = 0;
+  pos_1 = 0;
   pos_2 = 0;
   pos = 0;
   prev_pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
-  //power = 0;
-  //sum_power = 0;
-  //sum_error = 0;
+  power = 0;
+  sum_power = 0;
+  sum_error = 0;
   //sum_p_error = 0;
-  resetCount++;*/
+  resetCount++;
   return;
 }
 
@@ -1094,13 +1094,16 @@ void loop() {
   }
   if (x_ref != x_ref_prev) {
     hasReset = false;
+    K_P = K_P_move;
+    K_D = K_D_move;
+    
   }
-  if (pos> 0.6 * x_ref && !hasReset){
+  if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
     MaxSpeed=0.02;
   }
   if (abs(t) <= position_error) {
     hasReset = true;
-    MaxSpeed = 0.035
+    MaxSpeed = 0.035;
   }
   x_ref_prev = x_ref;
   // Calculate reference speed with respect to a reference position
@@ -1116,8 +1119,8 @@ void loop() {
     K_D = K_D_move;
   }*/
 
-  K_P = K_P_stable;
-  K_D = K_D_stable;
+  //K_P = K_P_stable;
+  //K_D = K_D_stable;
 
   pitch = ypr.pitch - pitch_bias;  // adjusting pitch with bias
 

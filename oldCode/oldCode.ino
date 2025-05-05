@@ -18,8 +18,8 @@
   AsyncWebServer server(80);
   // Replace with your network credentials
   // Check that the device used is also connected to the same wifi
-  const char* ssid = "IPhone de Nicolas";  
-  const char* password = "nicolebg";
+  const char* ssid = "Hugh G Rection";  
+  const char* password = "12345678";
 
 //---CONSTANTS---
     //Rayon roues
@@ -1059,9 +1059,15 @@ void loop() {
   }
   if (x_ref != x_ref_prev) {
     hasReset = false;
+    K_P = K_P_move;
+    K_D = K_D_move;
+  }
+  if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
+    MaxSpeed=0.02;
   }
   if (abs(t) <= position_error) {
     hasReset = true;
+    MaxSpeed = 0.035;
   }
 
   x_ref_prev = x_ref;
@@ -1070,14 +1076,14 @@ void loop() {
   refSpeed = P_decreasing_speed(pos, x_ref);
 
   // Setting PID constants (stability vs movement)
-  if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
+  /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
     K_P = K_P_stable; 
     K_D = K_D_stable;
   }else{
     K_P= K_P_move; 
     K_D=K_D_move;
   }
-
+*/
   pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
   // Create an input spike when starting motion
