@@ -684,7 +684,7 @@ void resetVariables() {
   if (hasReset) {
     return;
   }
-  x_ref = 0;
+  x_ref = position_error;
   encoder1.setCount(0);
   encoder2.setCount(0);
   /*for(int i = 0; i <= 9; i++){
@@ -1064,7 +1064,7 @@ void loop() {
     K_P = K_P_move;
     K_D = K_D_move;
   }
-  if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
+  if (abs(pos)> abs(0.5 * x_ref) && !hasReset){
     MaxSpeed=0.02;
   }
   if (abs(t) <= position_error) {
