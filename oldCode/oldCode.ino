@@ -1065,10 +1065,12 @@ void loop() {
     K_D = K_D_move;
   }
   if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
-    MaxSpeed=0.025;
+    MaxSpeed=0.02;
   }
   if (abs(t) <= position_error) {
     hasReset = true;
+    MaxSpeed=0.035;
+
   }
 
   x_ref_prev = x_ref;
