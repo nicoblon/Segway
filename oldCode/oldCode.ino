@@ -1055,7 +1055,7 @@ void loop() {
   prev_power = power;                   // updating previous power variable
   t = x_ref - pos;                      //position error
   power = t - sgn(t) * position_error;  // calculating power
-
+  
 
   if (abs(t) <= position_error && !hasReset) {
     resetVariables();

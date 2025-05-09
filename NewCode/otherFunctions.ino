@@ -105,21 +105,26 @@ float P_decreasing_speed(float x, float x_ref){
   else return (feedback);
 }
 
-void resetVariables() {
+void resetVariables(float sign) {
   if (hasReset) {
     return;
   }
-  x_ref = position_error;
+  x_ref = 0;
   x_ref_prev = x_ref;
-  encoder1.setCount(0);
-  encoder2.setCount(0);
+  if(sign<0){
+    encoder1.setCount(position_error*64*Rapport/pi);
+    encoder2.setCount(position_error*64*Rapport/pi);
+  }else{
+  encoder1.setCount(-position_error*64*Rapport/pi);
+  encoder2.setCount(-position_error*64*Rapport/pi);
+  }
   /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
   }*/
-  pos_1 = 0;
-  pos_2 = 0;
-  pos = 0;
-  prev_pos = 0;
+  //pos_1 = 0;
+  //pos_2 = 0;
+  //pos = 0;
+  prev_pos = -position_error;
   K_P = K_P_stable;
   K_D = K_D_stable;
   //power = 0;
@@ -128,7 +133,7 @@ void resetVariables() {
   //sum_p_error = 0;
   refSpeed=0;
   resetCount++;
-  MaxSpeed = 0.02;
+  MaxSpeed = 0.025;
   return;
 }
 

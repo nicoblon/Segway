@@ -93,14 +93,26 @@ void loop() {
 
   // Check if need to reset variables
   if (abs(t) <= position_error && !hasReset) {
-    resetVariables();
+    resetVariables(t);
     hasReset = true;
+
   }else{
     if (x_ref != x_ref_prev) {
       hasReset = false;
       K_P = K_P_move;
       K_D = K_D_move;
+      encoder1.setCount(0);
+      encoder2.setCount(0);
+      rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
+      rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
+      //Position of the segway in [cm]
+      pos_1 = rad1 * R;
+      pos_2 = rad2 * R;
+      pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
+      prev_pos=0;
       MaxSpeed = 0.035;
+      position_error= constrain((0.5*x_ref),0,50);
+      
     }
     /*if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
       MaxSpeed=MinSpeed;
