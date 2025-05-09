@@ -84,7 +84,7 @@
     float prev_power = 0;
 
     bool resetALL = false;
-    bool hasReset = true;
+    bool hasReset = false;
     uint8_t resetCount = 0;
 
 
@@ -676,7 +676,7 @@ float P_decreasing_speed(float x, float x_ref){
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
-  if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
+  //if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
   else return (feedback);
 }
 
@@ -684,7 +684,7 @@ void resetVariables() {
   if (hasReset) {
     return;
   }
-  x_ref = position_error;
+  x_ref =position_error;
   encoder1.setCount(0);
   encoder2.setCount(0);
   /*for(int i = 0; i <= 9; i++){
@@ -693,6 +693,7 @@ void resetVariables() {
   pos_1 = 0;
   pos_2 = 0;
   pos = 0;
+  x_ref_prev=x_ref
   prev_pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
@@ -702,6 +703,8 @@ void resetVariables() {
   //sum_p_error = 0;
   refSpeed=0;
   resetCount++;
+  MaxSpeed=0.02;
+
   return;
 }
 
@@ -1063,15 +1066,16 @@ void loop() {
     hasReset = false;
     K_P = K_P_move;
     K_D = K_D_move;
-  }
-  if (abs(pos)> abs(0.5 * x_ref) && !hasReset){
-    MaxSpeed=0.02;
-  }
-  if (abs(t) <= position_error) {
-    hasReset = true;
     MaxSpeed=0.035;
 
   }
+  /*if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
+    MaxSpeed=0.02;
+  }*/
+
+  /*if (abs(t) <= position_error) {
+    hasReset = true;
+  }*/
 
   x_ref_prev = x_ref;
 
@@ -1109,7 +1113,6 @@ void loop() {
   
   Travel(x_cmmd, 0); // Function that instructs motors what to do
 
-  Serial.println(Ki_speed); 
 
   // time management, making every loop iteration exactly 10ms
   t_end=micros();

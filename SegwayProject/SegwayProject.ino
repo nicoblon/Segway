@@ -709,11 +709,11 @@ void resetVariables() {
   prev_pos = 0;
   K_P = K_P_stable;
   K_D = K_D_stable;
-  power = 0;
-  sum_power = 0;
-  sum_error = 0;
-  sum_p_error = 0;
-  resetCount++;
+  //power = 0;
+  //sum_power = 0;
+  //sum_error = 0;
+  //sum_p_error = 0;
+  //resetCount++;
   return;
 }
 
@@ -1091,19 +1091,20 @@ void loop() {
 
   if (abs(t) <= position_error && !hasReset) {
     resetVariables();
+    hasReset=true;
   }
+  else{
   if (x_ref != x_ref_prev) {
     hasReset = false;
     K_P = K_P_move;
     K_D = K_D_move;
-    
+    MaxSpeed = 0.035;    
   }
   if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
     MaxSpeed=0.02;
   }
   if (abs(t) <= position_error) {
     hasReset = true;
-    MaxSpeed = 0.035;
   }
   x_ref_prev = x_ref;
   // Calculate reference speed with respect to a reference position
@@ -1153,5 +1154,6 @@ void loop() {
   }
   DeltaTime = timer/1000;
   delayMicroseconds(timer - t_loop);
+  }
 
 }
