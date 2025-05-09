@@ -101,19 +101,13 @@ void loop() {
       K_P = K_P_move;
       K_D = K_D_move;
     }
-    if (abs(pos)> abs(0.5 * x_ref) && !hasReset){
-      MaxSpeed=0.02;
+    if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
+      MaxSpeed=MinSpeed;
     }
-    if (abs(t) <= position_error) {
-      hasReset = true;
-      MaxSpeed=0.035;
-
-    }
-
-    x_ref_prev = x_ref;
 
     // Calculate reference speed with respect to a reference position
     refSpeed = P_decreasing_speed(pos, x_ref);
+    
 
     // Setting PID constants (stability vs movement)
     /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -127,7 +121,7 @@ void loop() {
     pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
     // Create an input spike when starting motion
-    if(prevSpeed==0 && prevSpeed != refSpeed){
+    if(x_ref_prev != x_ref){
       x=D_Start(refSpeed, prevSpeed);
     }
     /*else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
@@ -138,6 +132,7 @@ void loop() {
     }//Add desired speed 
 
     prevSpeed=average_speed; // updating previous speed variable
+    x_ref_prev = x_ref;
 
     pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
@@ -145,7 +140,7 @@ void loop() {
 
     yaw_wheels = asin((pos_1-pos_2)/L)* 180/pi;
 
-    yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+    //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 

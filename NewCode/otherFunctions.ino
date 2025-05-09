@@ -109,7 +109,8 @@ void resetVariables() {
   if (hasReset) {
     return;
   }
-  x_ref = position_error;
+  x_ref = 0;
+  x_ref_prev = x_ref;
   encoder1.setCount(0);
   encoder2.setCount(0);
   /*for(int i = 0; i <= 9; i++){
@@ -127,6 +128,7 @@ void resetVariables() {
   //sum_p_error = 0;
   refSpeed=0;
   resetCount++;
+  MaxSpeed = 0.035;
   return;
 }
 

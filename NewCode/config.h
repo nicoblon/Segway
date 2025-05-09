@@ -44,8 +44,6 @@ extern String Ki_speed_val;
 extern String D_stop_val;
 extern String turn_cmmd_val;
 
-extern const char* ssid;  
-extern const char* password;
 
 //---CONSTANTS---
     //Rayon roues
