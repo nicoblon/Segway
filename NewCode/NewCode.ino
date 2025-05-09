@@ -100,14 +100,15 @@ void loop() {
       hasReset = false;
       K_P = K_P_move;
       K_D = K_D_move;
+      MaxSpeed = 0.035;
     }
-    if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
+    /*if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
       MaxSpeed=MinSpeed;
-    }
+    }*/
 
     // Calculate reference speed with respect to a reference position
     refSpeed = P_decreasing_speed(pos, x_ref);
-    
+
 
     // Setting PID constants (stability vs movement)
     /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -143,11 +144,6 @@ void loop() {
     //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
-
-    Serial.print("Kp_yaw: ");
-    Serial.print(Ky_P);
-    Serial.print(", Ki_yaw: ");
-    Serial.println(Ky_I);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();
