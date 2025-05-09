@@ -124,6 +124,7 @@ void resetVariables(float sign) {
   //pos_1 = 0;
   //pos_2 = 0;
   //pos = 0;
+
   prev_pos = -position_error;
   K_P = K_P_stable;
   K_D = K_D_stable;
@@ -134,6 +135,7 @@ void resetVariables(float sign) {
   refSpeed=0;
   resetCount++;
   MaxSpeed = 0.025;
+  yaw_ref = ypr.yaw;
   return;
 }
 
@@ -178,8 +180,8 @@ float averageNonZero(float arr[], int size) {
 }
 
 // Function PI_y_feedback that compute and define the turn command
-float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yaw_cmmd){
-  float error_yaw=yaw_cmmd-yaw_ref; //yaw : turn command, angle in degres [°]
+float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
+  float error_yaw = yawIn - yaw_ref;
   if (abs(error_yaw)>0.1) sum_y_error+=error_yaw; //add the current error to the previous one
   sum_y_error *= 0.9 ;//leaky integrator
   if (abs(sum_y_error)>10){
@@ -187,9 +189,8 @@ float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yaw_cmmd){
   }
   Ky_prop=Ky_P*error_yaw;
   Ky_int=Ky_I*sum_y_error;
-  int feedback=round(Ky_prop+K_int);
-  if(abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
-  if(abs(feedback)<MinSpeed) return (sgn(feedback)*MinSpeed);
-  else return feedback;
+  int feedback = round(Ky_prop+K_int);
+  constrain(feedback, -D_stop, D_stop);
+  return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }

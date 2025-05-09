@@ -25,8 +25,8 @@ const char index_html[] PROGMEM = R"rawliteral(
           align-items: center;
           justify-content: space-between;
           background: #ffffff;
-          padding: 8px;
-          margin: 8px 0;
+          padding: 10px;
+          margin: 10px 0;
           border-radius: 8px;
           box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
@@ -38,7 +38,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         .param input {
           flex: 1;
           padding: 5px;
-          font-size: 13px;
+          font-size: 14px;
           border: 1px solid #ccc;
           border-radius: 4px;
           margin-right: 10px;
@@ -46,8 +46,8 @@ const char index_html[] PROGMEM = R"rawliteral(
         .param button {
           background-color: #ff69b4;
           border: none;
-          padding: 6px 12px;
-          font-size: 13px;
+          padding: 8px 16px;
+          font-size: 14px;
           border-radius: 4px;
           cursor: pointer;
           color: white;
@@ -60,11 +60,11 @@ const char index_html[] PROGMEM = R"rawliteral(
           margin-top: 20px;
         }
         .button {
-          font-size: 16px;
-          padding: 10px 20px;
-          margin: 8px;
+          font-size: 18px;
+          padding: 12px;
+          margin: 6px;
           border-radius: 8px;
-          background-color: #003366;
+          background-color: #4CAF50;
           color: white;
           border: none;
           cursor: pointer;

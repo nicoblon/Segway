@@ -44,7 +44,6 @@ extern String Ki_speed_val;
 extern String D_stop_val;
 extern String turn_cmmd_val;
 
-
 //---CONSTANTS---
     //Rayon roues
     const int R = 3.2; //[cm]
@@ -124,7 +123,7 @@ extern String turn_cmmd_val;
     float pitch = 0.0; 
     float pitch_ref = 0.0;
     float yaw_ref = 0.0;
-
+    
   // Declaring variables that used to be declared in PID/PD to make faster
     float K_prop;
     float K_int;

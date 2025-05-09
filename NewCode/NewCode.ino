@@ -40,6 +40,7 @@ void setup() {
 
   K_P = K_P_stable; 
   K_D = K_D_stable;
+  yaw_ref = ypr.yaw;
 }
 
 void loop() {
@@ -114,9 +115,8 @@ void loop() {
       position_error= constrain((0.5*x_ref),0,50);
       
     }
-    /*if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
-      MaxSpeed=MinSpeed;
-    }*/
+    if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
+    }
 
     // Calculate reference speed with respect to a reference position
     refSpeed = P_decreasing_speed(pos, x_ref);
@@ -151,9 +151,9 @@ void loop() {
 
     x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
-    yaw_wheels = asin((pos_1-pos_2)/L)* 180/pi;
+    yaw_wheels = (pos_1-pos_2)/L * 180/pi;
 
-    //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+    yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
