@@ -137,7 +137,6 @@ void resetVariables(float sign) {
   refSpeed=0;
   resetCount++;
   MaxSpeed = 0.025;
-  yaw_ref = ypr.yaw;
   return;
 }
 
@@ -195,6 +194,7 @@ float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
   Ky_prop=Ky_P*error_yaw;
   Ky_int=Ky_I*sum_y_error;
   int feedback = round(Ky_prop+K_int);
+  //if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
   return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }

@@ -65,13 +65,15 @@ void loop() {
   pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
   yaw_wheels = (pos_1-pos_2)/L * 180/pi;
 
+  prev_pos=pos; // updating previous position variable
+
+  
+
   // Calculating the current speed 
   speed= (pos-prev_pos)/DeltaTime;
   // Updating buffer and calculating average speed
   updateSpeedBuffer(speed); //adds value to speedBuffer list
   average_speed=averageNonZero(speedBuffer, BUFFER_SIZE); // calculating average speed over the last 10 values
-  
-  prev_pos=pos; // updating previous position variable
 
   // Read accelerometer and transforming into an angle
   if (bno08x.getSensorEvent(&sensorValue)) { 
@@ -88,10 +90,6 @@ void loop() {
     static long last = 0; 
     long now; 
   }
-  
-  prev_power = power;                   // updating previous power variable
-  t = x_ref - pos;                      //position error
-  power = t - sgn(t) * position_error;  // calculating power
 
   // Check if need to reset variables
   if (abs(t) <= position_error && !hasReset) {
@@ -107,11 +105,20 @@ void loop() {
       encoder2.setCount(0);
       rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
       rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
+
       //Position of the segway in [cm]
+      pos_1 = rad1*R;
+      pos_2 = rad2*R;
+      yaw_wheels = (pos_1-pos_2)/L * 180/pi;
+      
       prev_pos=0;
       MaxSpeed = 0.035;
       position_error= constrain((0.5*x_ref),0,50);
     }
+
+    prev_power = power;                   // updating previous power variable
+    t = x_ref - pos;                      //position error
+    power = t - sgn(t) * position_error;  // calculating power
 
     // Calculate reference speed with respect to a reference position
     refSpeed = P_decreasing_speed(pos, x_ref);

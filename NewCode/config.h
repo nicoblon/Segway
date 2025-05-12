@@ -79,7 +79,7 @@ extern String turn_cmmd_val;
     float pitch_bias = 3.3; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
-    float Ky_P = 0;//0.5;
+    float Ky_P = 5;//0.5;
     float Ky_I = 0;//1;
     float MaxSpeed=0.035;
     float MinSpeed=0.02;
