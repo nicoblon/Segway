@@ -63,6 +63,7 @@ void loop() {
   pos_1 = rad1 * R;
   pos_2 = rad2 * R;
   pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
+  yaw_wheels = (pos_1-pos_2)/L * 180/pi;
 
   // Calculating the current speed 
   speed= (pos-prev_pos)/DeltaTime;
@@ -107,20 +108,13 @@ void loop() {
       rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
       rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
       //Position of the segway in [cm]
-      pos_1 = rad1 * R;
-      pos_2 = rad2 * R;
-      pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
       prev_pos=0;
       MaxSpeed = 0.035;
       position_error= constrain((0.5*x_ref),0,50);
-      
-    }
-    if (abs(pos) >= abs(0.5 * x_ref) && !hasReset){
     }
 
     // Calculate reference speed with respect to a reference position
     refSpeed = P_decreasing_speed(pos, x_ref);
-
 
     // Setting PID constants (stability vs movement)
     /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -151,9 +145,11 @@ void loop() {
 
     x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
-    yaw_wheels = (pos_1-pos_2)/L * 180/pi;
-
     yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+
+    avail_turn = (255 - abs(x_cmmd));
+
+    if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 

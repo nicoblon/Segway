@@ -47,7 +47,6 @@ extern String turn_cmmd_val;
 //---CONSTANTS---
     //Rayon roues
     const int R = 3.2; //[cm]
-    const float rayon = 18/2; //[cm] =  wheelbase/2
     const float L = 20.5;
 
     const float pi = 3.14159265;
@@ -80,8 +79,8 @@ extern String turn_cmmd_val;
     float pitch_bias = 3.3; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
-    float Ky_P = 0.5;//0.5;
-    float Ky_I = 1.5;//1;
+    float Ky_P = 0;//0.5;
+    float Ky_I = 0;//1;
     float MaxSpeed=0.035;
     float MinSpeed=0.02;
     float prevSpeed=0;
@@ -97,11 +96,11 @@ extern String turn_cmmd_val;
 
     float timeOverflow=10000;
 
-    float LeftMotorAdjustment = 0.975;
+    float LeftMotorAdjustment = 1;  //0.975
     float RightMotorAdjustment = 1;
 
     float D_start = 1000;
-    float D_stop = 0;
+    float D_stop = 200;
 
     float sum_power = 0;
     float power = 0;
@@ -151,8 +150,6 @@ extern String turn_cmmd_val;
     int yaw_cmmd;
 
     int command;
-    int l; //for the left wheel
-    int r; //for the right wheel
 
     float pos;
     float yaw;
