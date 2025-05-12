@@ -101,7 +101,7 @@ float P_decreasing_speed(float x, float x_ref){
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
-  if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
+  //if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
   else return (feedback);
 }
 
@@ -111,17 +111,15 @@ void resetVariables(float sign) {
   }
   x_ref = 0;
   x_ref_prev = x_ref;
-
   long distance = position_error*64*Rapport/pi;
   if(sign<0){
-    encoder1.setCount(-distance);
+    encoder1.setCount(distance);
     encoder2.setCount(distance);
     prev_pos = position_error;
-
   }else{
-    encoder1.setCount(distance);
-    encoder2.setCount(-distance);
-    prev_pos = -position_error;
+  encoder1.setCount(-distance);
+  encoder2.setCount(-distance);
+  prev_pos =-position_error;
 
   }
   /*for(int i = 0; i <= 9; i++){
@@ -130,43 +128,45 @@ void resetVariables(float sign) {
   //pos_1 = 0;
   //pos_2 = 0;
   //pos = 0;
-
+ 
   K_P = K_P_stable;
   K_D = K_D_stable;
   //power = 0;
   //sum_power = 0;
   //sum_error = 0;
   //sum_p_error = 0;
-  refSpeed=0;
-  MaxSpeed = 0.025;
+  //refSpeed=0;
+  resetCount++;
+  //MaxSpeed = 0.025;
+  delay(5);
+
   return;
 }
 
 // Function used to turn
 void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
-  int l = x_command - turn_command;             //left wheel
-  int r = x_command + turn_command;             //right wheel
-  
+  l = x_command - turn_command / 2;             //left wheel
+  r = x_command + turn_command / 2;             //right wheel
   if (l >= 0 && r >= 0) {
     analogWrite(M1A, 0);
-    analogWrite(M1B, r);
-    analogWrite(M2A, l);
+    analogWrite(M2A, l * LeftMotorAdjustment);
+    analogWrite(M1B, r * RightMotorAdjustment);
     analogWrite(M2B, 0);
   } else if (l < 0 && r >= 0) {
     analogWrite(M1A, 0);
-    analogWrite(M1B, r);
     analogWrite(M2A, 0);
-    analogWrite(M2B, -l);
+    analogWrite(M1B, r * RightMotorAdjustment);
+    analogWrite(M2B, -l * LeftMotorAdjustment);
   } else if (l >= 0 && r < 0) {
-    analogWrite(M1A, -r);
+    analogWrite(M1A, l * LeftMotorAdjustment);
+    analogWrite(M2A, -r * RightMotorAdjustment);
     analogWrite(M1B, 0);
-    analogWrite(M2A, l);
     analogWrite(M2B, 0);
   } else if (l < 0 && r < 0) {
-    analogWrite(M1A, -r);
-    analogWrite(M1B, 0);
+    analogWrite(M1A, -r * RightMotorAdjustment);
     analogWrite(M2A, 0);
-    analogWrite(M2B, -l);
+    analogWrite(M1B, 0);
+    analogWrite(M2B, -l * LeftMotorAdjustment);
   }
 }
 
@@ -184,19 +184,18 @@ float averageNonZero(float arr[], int size) {
 }
 
 // Function PI_y_feedback that compute and define the turn command
-float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
-  float error_yaw = yaw_ref - yawIn;
+float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yaw_cmmd){
+  float error_yaw=yaw_cmmd-yaw_ref; //yaw : turn command, angle in degres [°]
   if (abs(error_yaw)>0.1) sum_y_error+=error_yaw; //add the current error to the previous one
   sum_y_error *= 0.9 ;//leaky integrator
-
-  /*if (abs(sum_y_error)>10){
+  if (abs(sum_y_error)>10){
     sum_y_error=constrain(sum_y_error,-10,10);
-  }*/
-
+  }
   Ky_prop=Ky_P*error_yaw;
   Ky_int=Ky_I*sum_y_error;
-  int feedback = round(Ky_prop+K_int);
-  if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
-  return feedback;
+  int feedback=round(Ky_prop+K_int);
+  if(abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
+  if(abs(feedback)<MinSpeed) return (sgn(feedback)*MinSpeed);
+  else return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }
