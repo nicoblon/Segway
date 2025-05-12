@@ -117,12 +117,10 @@ void resetVariables(float sign) {
     encoder1.setCount(-distance);
     encoder2.setCount(distance);
     prev_pos = position_error;
-
   }else{
     encoder1.setCount(distance);
     encoder2.setCount(-distance);
     prev_pos = -position_error;
-
   }
   /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
@@ -130,13 +128,13 @@ void resetVariables(float sign) {
   //pos_1 = 0;
   //pos_2 = 0;
   //pos = 0;
-
   K_P = K_P_stable;
   K_D = K_D_stable;
   //power = 0;
-  //sum_power = 0;
+  sum_power = 0;
   //sum_error = 0;
-  //sum_p_error = 0;
+  sum_p_error = 0;
+  sum_y_error = 0;
   refSpeed=0;
   MaxSpeed = 0.025;
   return;

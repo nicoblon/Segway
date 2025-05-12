@@ -19,6 +19,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200); 
   delay(1000);
+
   Serial.println("Adafruit BNO08x test!");
 
   encoder1.attachFullQuad (A1, A2); //full quadrature so we divide by 4 in the angle
@@ -40,11 +41,12 @@ void setup() {
 
   K_P = K_P_stable; 
   K_D = K_D_stable;
-  yaw_ref = ypr.yaw;
-}
+  }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  K_P = K_P_stable;
+  K_D = K_D_stable;
 
   // counting time
   t_start=micros();
@@ -157,6 +159,12 @@ void loop() {
     if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
+
+    Serial.print(K_P_stable);
+    Serial.print(", ");
+    Serial.print(K_D_stable);
+    Serial.print(", ");
+    Serial.println(K_I);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();

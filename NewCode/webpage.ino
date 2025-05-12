@@ -76,9 +76,10 @@ const char index_html[] PROGMEM = R"rawliteral(
 
       <h3>Live Data</h3>
       <p>Yaw (from wheels): <span id="yawWheelsVal">Loading...</span> deg</p>
+      <p>Average speed: <span id="average_speedVal">Loading...</span></p>
       
       <p><span id="textPropValS">Proportional gain for stabilization(current: %PPS%) </span>
-      <input type="number" id="KPS" value="%PPS%" min="0" max="100" step="1">
+      <input type="number" id="KPS" value="%PPS%" min="-1000" max="1000" step="1">
       <button onclick="implement_P_S()">Submit</button></p>
 
       <p><span id="textPropValM">Proportional gain for motion(current: %PPM%) </span>
@@ -373,6 +374,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             if(xhr.readyState == 4 && xhr.status == 200){
                 var obj = JSON.parse(xhr.responseText);
                 document.getElementById("yawWheelsVal").innerHTML = obj.yaw_wheels.toFixed(2);
+                document.getElementById("average_speedVal").innerHTML = obj.average_speed.toFixed(2);
             }
         };
         xhr.send();
@@ -749,10 +751,11 @@ void serverStuff(void){
      request->send(200, "text/plain", "OK");
   });
 
-   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
-    String json = "{\"yaw_wheels\":" + String(yaw_wheels) + "}";
+  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = "{\"yaw_wheels\":" + String(yaw_wheels) + 
+                  ",\"average_speed\":" + String(average_speed) +  "}";
     request->send(200, "application/json", json);
-  }); 
+  });
 
 
   server.begin(); 
