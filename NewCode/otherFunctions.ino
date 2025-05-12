@@ -114,10 +114,10 @@ void resetVariables(float sign) {
 
   long distance = position_error*64*Rapport/pi;
   if(sign<0){
-    encoder1.setCount(distance);
+    encoder1.setCount(-distance);
     encoder2.setCount(distance);
   }else{
-    encoder1.setCount(-distance);
+    encoder1.setCount(distance);
     encoder2.setCount(-distance);
   }
   /*for(int i = 0; i <= 9; i++){
@@ -135,7 +135,6 @@ void resetVariables(float sign) {
   //sum_error = 0;
   //sum_p_error = 0;
   refSpeed=0;
-  resetCount++;
   MaxSpeed = 0.025;
   return;
 }
@@ -194,7 +193,7 @@ float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
   Ky_prop=Ky_P*error_yaw;
   Ky_int=Ky_I*sum_y_error;
   int feedback = round(Ky_prop+K_int);
-  //if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
+  if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
   return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }

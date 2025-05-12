@@ -73,6 +73,9 @@ const char index_html[] PROGMEM = R"rawliteral(
     </head>
     <body>
       <h2>PID web tuning</h2>
+
+      <h3>Live Data</h3>
+      <p>Yaw (from wheels): <span id="yawWheelsVal">Loading...</span> deg</p>
       
       <p><span id="textPropValS">Proportional gain for stabilization(current: %PPS%) </span>
       <input type="number" id="KPS" value="%PPS%" min="0" max="100" step="1">
@@ -362,6 +365,22 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.open("GET", "/Position_error?pos_err="+position_error_val, true);
           xhr.send();
       }
+
+      function updateData(){
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/data", true);
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState == 4 && xhr.status == 200){
+                var obj = JSON.parse(xhr.responseText);
+                document.getElementById("yawWheelsVal").innerHTML = obj.yaw_wheels.toFixed(2);
+            }
+        };
+        xhr.send();
+      }
+
+      // Refresh every 200 milliseconds (adjust if needed)
+      setInterval(updateData, 200);
+
 
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
@@ -728,7 +747,13 @@ void serverStuff(void){
        inputMessage = "No message sent";
      }
      request->send(200, "text/plain", "OK");
-   });
+  });
+
+   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+    String json = "{\"yaw_wheels\":" + String(yaw_wheels) + "}";
+    request->send(200, "application/json", json);
+  }); 
+
 
   server.begin(); 
 }
