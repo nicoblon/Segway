@@ -160,11 +160,51 @@ void loop() {
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
+    Serial.print("K_P_stable: ");
     Serial.print(K_P_stable);
-    Serial.print(", ");
+    Serial.print(", K_I: ");
+    Serial.print(K_I);
+    Serial.print(", K_D_stable: ");
     Serial.print(K_D_stable);
-    Serial.print(", ");
-    Serial.println(K_I);
+    Serial.print(", K_P_move: ");
+    Serial.print(K_P_move);
+    Serial.print(", K_D_move: ");
+    Serial.print(K_D_move);
+    Serial.print(", Kp_speed: ");
+    Serial.print(Kp_speed);
+    Serial.print(", Ki_speed: ");
+    Serial.print(Ki_speed);
+    Serial.print(", Kp_P: ");
+    Serial.print(Kp_P);
+    Serial.print(", Kp_I: ");
+    Serial.print(Kp_I);
+    Serial.print(", Ky_P: ");
+    Serial.print(Ky_P);
+    Serial.print(", Ky_I: ");
+    Serial.prin(Ky_I);
+    Serial.print(", pitch_bias: ");
+    Serial.print(pitch_bias);
+    Serial.print(", LeftMotorAdjustment: ");
+    Serial.print(LeftMotorAdjusment);
+    Serial.print(", RightMotorAdjusment: ");
+    Serial.print(RightMotorAdjustment);
+    Serial.print(", D_start: ");
+    Serial.print(D_start);
+    Serial.print(", D_stop: ");
+    Serial.print(D_stop);
+    Serial.print(", speed_err: ");
+    Serial.print(speed_err);
+    Serial.print(", position_error: ");
+    Serial.print(position_error);
+    Serial.print(", x_ref: ");
+    Serial.print(x_ref);
+    Serial.print(", turn_cmmd: ");
+    Serial.println(turn_cmmd);
+    
+
+    
+
+
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();

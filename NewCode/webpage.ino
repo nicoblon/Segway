@@ -69,118 +69,115 @@ const char index_html[] PROGMEM = R"rawliteral(
           border: none;
           cursor: pointer;
         }
+        .container-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+        }
+        .column {
+          flex: 1;
+          padding: 10px;
+          box-sizing: border-box;
+        }
+        .column h3 {
+          margin-top: 0;
+        }
+        .section {
+          margin-bottom: 20px;
+        }
       </style>
     </head>
     <body>
-      <h2>PID web tuning</h2>
+    
+      <h2>PID Web Tuning</h2>
+      <div class="container-flex">
 
-      <h3>Live Data</h3>
-      <p>Yaw (from wheels): <span id="yawWheelsVal">Loading...</span> deg</p>
-      <p>Average speed: <span id="average_speedVal">Loading...</span></p>
-      
-      <p><span id="textPropValS">Proportional gain for stabilization(current: %PPS%) </span>
-      <input type="number" id="KPS" value="%PPS%" min="-1000" max="1000" step="1">
-      <button onclick="implement_P_S()">Submit</button></p>
+        <!-- LEFT COLUMN: PID PARAMETERS -->
+        <div class="column">
+          <h3>PID Parameters</h3>
 
-      <p><span id="textPropValM">Proportional gain for motion(current: %PPM%) </span>
-      <input type="number" id="KPM" value="%PPM%" min="0" max="100" step="1">
-      <button onclick="implement_P_M()">Submit</button></p>
-      
-      <p><span id="textIntVal">Integral gain (current: %II%) </span>
-      <input type="number" id="KI" value="%II%" min="0" max="10" step="0.1">
-      <button onclick="implement_I()">Submit</button></p>
-      
-      <p><span id="textDerValS">Derivative gain for stabilization(current: %DDS%) </span>
-      <input type="number" id="KDS" value="%DDS%" min="0" max="100" step="1">
-      <button onclick="implement_D_S()">Submit</button></p>
+          <div class="section">
+            <strong>Stabilization PID</strong>
+            <p>P Gain: <input type="number" id="KPS" value="%PPS%" min="-1000" max="1000" step="1"> <button onclick="implement_P_S()">Submit</button></p>
+            <p>I Gain: <input type="number" id="KI" value="%II%" min="0" max="10" step="0.1"> <button onclick="implement_I()">Submit</button></p>
+            <p>D Gain: <input type="number" id="KDS" value="%DDS%" min="0" max="100" step="1"> <button onclick="implement_D_S()">Submit</button></p>
+          </div>
 
-      <p><span id="textDerValM">Derivative gain for motion(current: %DDM%) </span>
-      <input type="number" id="KDM" value="%DDM%" min="0" max="100" step="1">
-      <button onclick="implement_D_M()">Submit</button></p>
-      
-      <p><span id="textPitchBiasVal">Pitch Bias (current: %BB%) </span>
-      <input type="number" id="PB" value="%BB%" min="-45" max="45" step="0.1">
-      <button onclick="implement_B()">Submit</button></p>
+          <div class="section">
+            <strong>Motion PID</strong>
+            <p>P Gain: <input type="number" id="KPM" value="%PPM%" min="0" max="100" step="1"> <button onclick="implement_P_M()">Submit</button></p>
+            <p>D Gain: <input type="number" id="KDM" value="%DDM%" min="0" max="100" step="1"> <button onclick="implement_D_M()">Submit</button></p>
+          </div>
 
-      <p><span id="textKPpVal">Pos. Proportional gain (current: %KPp%) </span>
-      <input type="number" id="KPp" value="%KPp%" min="0" max="100" step="0.01">
-      <button onclick="implement_KpP()">Submit</button></p>
+          <div class="section">
+            <strong>Speed PID</strong>
+            <p>P Gain: <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1"> <button onclick="implement_Kp_speed()">Submit</button></p>
+            <p>I Gain: <input type="number" id="KI_sp" value="%Ki_speed%" min="0" max="10000" step="1"> <button onclick="implement_Ki_speed()">Submit</button></p>
+          </div>
 
-      <p><span id="textKIpVal">Pos. Integral gain (current: %KIp%) </span>
-      <input type="number" id="KIp" value="%KIp%" min="0" max="10" step="0.01">
-      <button onclick="implement_KpI()">Submit</button></p>
+          <div class="section">
+            <strong>Position PID</strong>
+            <p>P Gain: <input type="number" id="KPp" value="%KPp%" min="0" max="100" step="0.01"> <button onclick="implement_KpP()">Submit</button></p>
+            <p>I Gain: <input type="number" id="KIp" value="%KIp%" min="0" max="10" step="0.01"> <button onclick="implement_KpI()">Submit</button></p>
+          </div>
 
-      <p><span id="textKPyVal">Yaw Proportional gain (current: %Ky_P%) </span>
-      <input type="number" id="KPY" value="%Ky_P%" min="0" max="10" step="0.01">
-      <button onclick="implement_KyP()">Submit</button></p>
+          <div class="section">
+            <strong>Yaw PID</strong>
+            <p>P Gain: <input type="number" id="KPY" value="%Ky_P%" min="0" max="10" step="0.01"> <button onclick="implement_KyP()">Submit</button></p>
+            <p>I Gain: <input type="number" id="KIY" value="%Ky_I%" min="0" max="10" step="0.01"> <button onclick="implement_KyI()">Submit</button></p>
+          </div>
 
-      <p><span id="textKIyVal">Yaw Integral gain (current: %Ky_I%) </span>
-      <input type="number" id="KIY" value="%Ky_I%" min="0" max="10" step="0.01">
-      <button onclick="implement_KyI()">Submit</button></p>
+          <div class="section">
+            <strong>Misc. Parameters</strong>
+            <p>Pitch Bias: <input type="number" id="PB" value="%BB%" min="-45" max="45" step="0.1"> <button onclick="implement_B()">Submit</button></p>
+            <p>Left Motor Adj.: <input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001"> <button onclick="implement_LeftMotorAdjustment()">Submit</button></p>
+            <p>Right Motor Adj.: <input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.001"> <button onclick="implement_RightMotorAdjustment()">Submit</button></p>
+          </div>
+        </div>
 
-      <p><span id="textLeftMotorAdjustmentVal">Left Motor Adjustment (current: %LeftMotorAdjustment%) </span>
-      <input type="number" id="LMot" value="%LeftMotorAdjustment%" min="0" max="1" step="0.001">
-      <button onclick="implement_LeftMotorAdjustment()">Submit</button></p>
+        <!-- MIDDLE COLUMN: LIVE DATA -->
+        <div class="column">
+          <h3>Live Data</h3>
+          <p>Yaw (from wheels): <span id="yawWheelsVal">Loading...</span> deg</p>
+          <p>Average speed: <span id="average_speedVal">Loading...</span></p>
 
-      <p><span id="textRightMotorAdjustmentVal">Right Motor Adjustment (current: %RightMotorAdjustment%) </span>
-      <input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.001">
-      <button onclick="implement_RightMotorAdjustment()">Submit</button></p>
+          <div class="section">
+            <strong>Thresholds & Errors</strong>
+            <p>D_start: <input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1"> <button onclick="implement_D_start()">Submit</button></p>
+            <p>D_stop: <input type="number" id="Dsp" value="%D_stop%" min="0" max="10000" step="1"> <button onclick="implement_D_stop()">Submit</button></p>
+            <p>Speed Error: <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01"> <button onclick="implement_speed_err()">Submit</button></p>
+            <p>Position Error: <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1"> <button onclick="implement_position_error()">Submit</button></p>
+          </div>
+        </div>
 
-      <p><span id="textD_startVal">D_start (current: %D_start%) </span>
-      <input type="number" id="Ds" value="%D_start%" min="0" max="100" step="0.1">
-      <button onclick="implement_D_start()">Submit</button></p>
+        <!-- RIGHT COLUMN: CONTROLS -->
+        <div class="column">
+          <h3>Control Panel</h3>
 
-      <p><span id="textD_stopVal">D_stop (current: %D_stop%) </span>
-      <input type="number" id="Dsp" value="%D_stop%" min="0" max="10000" step="1">
-      <button onclick="implement_D_stop()">Submit</button></p>
+          <div class="section">
+            <p>Reference Pos.: <input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1"> <button onclick="implement_x_ref()">Submit</button></p>
+            <p>Turn Command: <input type="number" id="t_c" value="%turn_cmmd%" min="-180" max="180" step="1"> <button onclick="implement_turn_cmmd()">Submit</button></p>
+          </div>
 
-      <p><span id="textx_refVal">Reference position (current: %x_ref%) </span>
-      <input type="number" id="Xref" value="%x_ref%" min="-10000" max="10000" step="1">
-      <button onclick="implement_x_ref()">Submit</button></p>
+          <div class="section">
+            <strong>Path Commands</strong><br>
+            <button onclick="sendcmmd('1')">Path 0</button>
+            <button onclick="sendcmmd('2')">Path 1</button><br>
+            <button onclick="sendcmmd('3')">Path 2</button>
+            <button onclick="sendcmmd('4')">Path 3</button>
+            <button onclick="sendcmmd('5')">Path 4</button>
+          </div>
 
-      <p><span id="textKp_speedVal">Speed Proportional Gain (current: %Kp_speed%) </span>
-      <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1">
-      <button onclick="implement_Kp_speed()">Submit</button></p>
-
-      <p><span id="textKi_speedVal">Speed Integral Gain (current: %Ki_speed%) </span>
-      <input type="number" id="KI_sp" value="%Ki_speed%" min="0" max="10000" step="1">
-      <button onclick="implement_Ki_speed()">Submit</button></p>
-
-      <p><span id="textspeed_errVal">Speed Error (current: %speed_err%) </span>
-      <input type="number" id="Sp_err" value="%speed_err%" min="0" max="10" step="0.01">
-      <button onclick="implement_speed_err()">Submit</button></p>
-
-      <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
-      <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1">
-      <button onclick="implement_position_error()">Submit</button></p>
-
-      <p><span id ="textturn_cmmdVal">Turn Command (current: %turn_cmmd%) </span>
-       <input type="number" id="t_c" value="%turn_cmmd%" min="-180" max="180" step="1">
-       <button onclick="implement_turn_cmmd()">Submit</button></p>
-
-      <div class="container">
-        <button class="button" onclick="sendcmmd('1')">Path 0</button>
-        <button class="button" onclick="sendcmmd('2')">Path 1</button>
-      </div>
-
-      <div class="container">
-        <button class="button" onclick="sendcmmd('3')">Path 2</button>
-        <button class="button" onclick="sendcmmd('4')">Path 3</button>
-        <button class="button" onclick="sendcmmd('5')">Path 4</button>
-      </div>
-
-      <div class="container">
-        <button class="button" onclick="sendcmmd('W')">Forward</button>
-      </div>
-
-      <div class="container">
-        <button class="button" onclick="sendcmmd('A')">Left</button>
-        <button class="button" onclick="sendcmmd('X')">Stop</button>
-        <button class="button" onclick="sendcmmd('D')">Right</button>
-      </div>
-
-      <div class="container">
-        <button class="button" onclick="sendcmmd('S')">Backward</button>
+          <div class="section">
+            <strong>Manual Control</strong><br>
+            <button onclick="sendcmmd('W')">Forward</button><br>
+            <button onclick="sendcmmd('A')">Left</button>
+            <button onclick="sendcmmd('X')">Stop</button>
+            <button onclick="sendcmmd('D')">Right</button><br>
+            <button onclick="sendcmmd('S')">Backward</button>
+          </div>
+        </div>
       </div>
 
     <script>
