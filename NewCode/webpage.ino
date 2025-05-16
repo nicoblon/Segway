@@ -232,7 +232,8 @@ const char index_html[] PROGMEM = R"rawliteral(
           <p>Average speed: <span id="average_speedVal">Loading...</span></p>
           <p>Position error: <span id="position_errorVal">Loading...</span></p>
           <p>Pitch: <span id="pitchVal">Loading...</span> deg</p>
-          <p>x Command: <span id="x_cmmdVal">Loading...</span> deg</p>
+          <p>x Command: <span id="x_cmmdVal">Loading...</span></p>
+          <p> pos: <span id="posVal">Loading...</span> cm</p>
 
           <div class="section">
             <strong>Thresholds & Errors</strong>
@@ -485,6 +486,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 document.getElementById("position_errorVal").innerHTML = obj.position_error.toFixed(0);
                 document.getElementById("pitchVal").innerHTML = obj.ypr_pitch.toFixed(2);
                 document.getElementById("x_cmmdVal").innerHTML = obj.x_cmmd.toFixed(0);
+                document.getElementById("posVal").innerHTMML = obj.pos.toFixed(0);
             }
         };
         xhr.send();
@@ -867,7 +869,8 @@ void serverStuff(void){
                   ",\"average_speed\":" + String(average_speed) +
                   ",\"position_error\":" + String(position_error) +
                   ",\"ypr_pitch\":" + String(ypr.pitch) + 
-                  ",\"x_cmmd\":" + String(x_cmmd) + "}";
+                  ",\"x_cmmd\":" + String(x_cmmd) + 
+                  ",\"pos\":" + String(pos) + "}";
     request->send(200, "application/json", json);
   });
 
