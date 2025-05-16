@@ -18,8 +18,8 @@
   AsyncWebServer server(80);
   // Replace with your network credentials
   // Check that the device used is also connected to the same wifi
-  const char* ssid = "Hugh G Rection";  
-  const char* password = "12345678";
+  const char* ssid = "IPhone de Nicolas";  
+  const char* password = "nicolebg";
 
 //---CONSTANTS---
     //Rayon roues
@@ -708,6 +708,7 @@ void resetVariables() {
   return;
 }
 
+/*
 // Function used to turn
 void Travel(int x_command, int turn_command){// instruction to the motors with the command
   if(x_command>=0){// forwards and left, forwards more than left wheel
@@ -722,7 +723,35 @@ void Travel(int x_command, int turn_command){// instruction to the motors with t
     analogWrite(M1A, -RightMotorAdjustment*x_command);
     analogWrite(M1B, 0);  
   }
+}*/
+
+void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
+  int l = x_command - turn_command;             //left wheel
+  int r = x_command + turn_command;             //right wheel
+  
+  if (l >= 0 && r >= 0) {
+    analogWrite(M1A, 0);
+    analogWrite(M1B, r);
+    analogWrite(M2A, l);
+    analogWrite(M2B, 0);
+  } else if (l < 0 && r >= 0) {
+    analogWrite(M1A, 0);
+    analogWrite(M1B, r);
+    analogWrite(M2A, 0);
+    analogWrite(M2B, -l);
+  } else if (l >= 0 && r < 0) {
+    analogWrite(M1A, -r);
+    analogWrite(M1B, 0);
+    analogWrite(M2A, l);
+    analogWrite(M2B, 0);
+  } else if (l < 0 && r < 0) {
+    analogWrite(M1A, -r);
+    analogWrite(M1B, 0);
+    analogWrite(M2A, 0);
+    analogWrite(M2B, -l);
+  }
 }
+
 //function that updates the oldest term in the speed array
 void updateSpeedBuffer(float newSpeed) {
     speedBuffer[speedIndex] = newSpeed;  // Replace oldest value

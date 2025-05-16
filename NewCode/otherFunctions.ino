@@ -68,7 +68,7 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){
   sum_error = constrain(sum_error, -10, 10);
   
   K_prop=K_P*error; //proportional part of the controller
-  K_int=K_I*sum_error; //integral part of the controller 
+  K_int= K_I*sum_error; //integral part of the controller 
   K_diff=K_D*(error-pre_error); //differential part of the controller  
   
   pre_error=error; //previous error update  
@@ -195,7 +195,7 @@ float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
 
   Ky_prop=Ky_P*error_yaw;
   Ky_int=Ky_I*sum_y_error;
-  int feedback = round(Ky_prop+K_int);
+  int feedback = round(Ky_prop+Ky_int);
   if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
   return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
