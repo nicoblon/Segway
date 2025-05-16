@@ -45,7 +45,7 @@ int sgn(int x){
 //Function which compute the error on position
 //and return the new pitch reference
 float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
-  float error_pos = pos - pos_ref;
+  float error_pos = pos_ref - pos;
   if (abs(error_pos)>1) sum_p_error+=error_pos; //add the current error to the previous one
   sum_p_error *= 0.98; //leaky integrator
   if (abs(sum_p_error)>10){
@@ -62,8 +62,10 @@ float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
 
 int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){ 
   float error = pitch_err;
-  if (abs(error)>0.1) sum_error+=error; //add the current error to the previous one
-  sum_error *= 0.98; //leaky integrator
+  sum_error *= 0.9; //leaky integrator
+  if (abs(error)>0.01) sum_error+=error; //add the current error to the previous one
+  
+  sum_error = constrain(sum_error, -10, 10);
   
   K_prop=K_P*error; //proportional part of the controller
   K_int=K_I*sum_error; //integral part of the controller 
