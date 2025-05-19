@@ -45,8 +45,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  K_P = K_P_stable;
-  K_D = K_D_stable;
+  //K_P = K_P_stable;
+  //K_D = K_D_stable;
 
   // counting time
   t_start=micros();

@@ -24,7 +24,7 @@
 //---CONSTANTS---
     //Rayon roues
     const int R = 3.2; //[cm]
-    const float rayon = 18/2; //[cm] =  wheelbase/2
+    const float L =20.5; //[cm] =  wheelbase/2
 
     const float pi = 3.14159265;
 
@@ -56,8 +56,8 @@
     float pitch_bias = 3.3; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
-    float Ky_P = 0.5;//0.5;
-    float Ky_I = 1.5;//1;
+    float Ky_P = 5;//0.5;
+    float Ky_I = 0;//1;
     float MaxSpeed=0.025;
     float MinSpeed=0.02;
     float prevSpeed=0;
@@ -133,6 +133,7 @@
 
     float pos;
     float yaw;
+    float yaw_wheels;
 
     // Boolean used to reset all the quantities giving informations 
     //on the segway relative position
@@ -172,6 +173,7 @@
     const char* position_error_input = "pos_err";
     const char* Ki_speed_input = "KI_sp";
     const char* D_stop_input = "Dsp";
+    const char* turn_cmmd_input = "TC";
 
     //Timing terms
     unsigned long t_start;
@@ -199,6 +201,7 @@
   String position_error_val = String(position_error);
   String Ki_speed_val = String(Ki_speed);
   String D_stop_val = String(D_stop);
+  String turn_cmmd_val = String(turn_cmmd);
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -299,6 +302,10 @@ const char index_html[] PROGMEM = R"rawliteral(
       <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
       <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1">
       <button onclick="implement_position_error()">Submit</button></p>
+
+      <p><span id="textturn_cmmdVal">Turn Command (current: %turn_cmmd%) </span>
+      <input type="number" id="TC" value="%turn_cmmd%" min="-180" max="180" step="1">
+      <button onclick="implement_turn_cmmd()">Submit</button></p>
 
       <div class="container">
         <button class="button" onclick="sendcmmd('1')">Path 0</button>
@@ -500,6 +507,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_turn_cmmd(){
+          var turn_cmmd_val = document.getElementById("TC").value;
+          document.getElementById("textturn_cmmdVal").innerHTML = "Turn Command (current: " + turn_cmmd_val + ") ";
+          console.log(turn_cmmd_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/turn_cmmd?TC="+turn_cmmd_val, true);
+          xhr.send();
+      }
+
       function sendcmmd(cmmd){
             var xhr = new XMLHttpRequest();
             xhr.open("GET", "/cmmd?cmd=" + cmmd, true);
@@ -671,16 +687,53 @@ float D_Start(float v_ref, float v_prev){
 }*/
 
 // Function that makes the speed decrease as we approach the wanted position
-float P_decreasing_speed(float x, float x_ref){
-   if(abs(t) <= position_error) power = 0;
-  sum_power*=0.95;
-  sum_power+=power;
-  float feedback = power*Kp_speed+Ki_speed*sum_power;
-  if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
-  //if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
-  else return (feedback);
-}
 
+
+float P_decreasing_speed(float x, float x_ref, float spee, float K_P_Speed, float K_I_Speed, float K_D_Speed) {
+    float error = x_ref - x;
+
+    // Close enough to target — stop and reset integrator
+    if (abs(error) <= position_error) {
+        sum_error_speed = 0;
+        return 0;
+    }
+
+    // Only accumulate if not saturated (anti-windup)
+    float proportional = Kp_speed * error;
+    float integral = Ki_speed * sum_error_speed;
+    float derivative = - D_stop * speed; 
+    float feedback = proportional + integral +derivative;
+    
+    if (abs(feedback) < MaxSpeed) {
+        sum_error_speed += error;
+        sum_error_speed *= 0.95;  // decay after update
+    }
+
+    // Recompute feedback after integration
+    feedback = Kp_speed * error + Ki_speed * sum_error_speed;
+
+    // Saturate output
+    if (abs(feedback) > MaxSpeed)
+        return sgn(feedback) * MaxSpeed;
+
+    return feedback;
+}
+float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
+  float error_yaw = yaw_ref - yawIn;
+  if (abs(error_yaw)>0.1) sum_y_error+=error_yaw; //add the current error to the previous one
+  sum_y_error *= 0.9 ;//leaky integrator
+
+  /*if (abs(sum_y_error)>10){
+    sum_y_error=constrain(sum_y_error,-10,10);
+  }*/
+
+  Ky_prop=Ky_P*error_yaw;
+  Ky_int=Ky_I*sum_y_error;
+  int feedback = round(Ky_prop+Ky_int);
+  if (abs(feedback)>max_v) feedback=sgn(feedback)*max_v; //limit the feedback from min -255 to the max 255 
+  return feedback;
+  //if (abs(yaw_cmmd)>180) yaw_cmmd=180
+}
 void resetVariables() {
   if (hasReset) {
     return;
@@ -709,23 +762,9 @@ void resetVariables() {
   return;
 }
 
-/*
 // Function used to turn
-void Travel(int x_command, int turn_command){// instruction to the motors with the command
-  if(x_command>=0){// forwards and left, forwards more than left wheel
-    analogWrite(M2A, LeftMotorAdjustment*x_command);
-    analogWrite(M2B, 0);
-    analogWrite(M1A, 0);
-    analogWrite(M1B, RightMotorAdjustment*x_command);
-  }
-  else{ 
-    analogWrite(M2A, 0);
-    analogWrite(M2B, -LeftMotorAdjustment*x_command);
-    analogWrite(M1A, -RightMotorAdjustment*x_command);
-    analogWrite(M1B, 0);  
-  }
-}*/
 
+// Function used to turn
 void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
   int l = x_command - turn_command;             //left wheel
   int r = x_command + turn_command;             //right wheel
@@ -1031,6 +1070,20 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/turn_cmmd", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(turn_cmmd_input)) {
+      inputMessage = request->getParam(turn_cmmd_inpus)->value();
+      turn_cmmd_val = inputMessage;
+      turn_cmmd = turn_cmmd_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
   server.begin(); 
   K_P = K_P_stable; 
   K_D = K_D_stable;
@@ -1057,7 +1110,7 @@ void loop() {
   pos_1 = rad1 * R;
   pos_2 = rad2 * R;
   pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
-
+  yaw_wheels = (pos_1-pos_2)/L * 180/pi;
   // Calculating the current speed 
   speed= (pos-prev_pos)/DeltaTime;
   // Updating buffer and calculating average speed
@@ -1107,6 +1160,9 @@ void loop() {
     pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
     prev_pos=0;
 
+    yaw_wheels = (pos_1-pos_2)/L * 180/pi;
+
+
 
   }
   if(average_speed<speed_err && abs(t)<position_error){
@@ -1122,9 +1178,11 @@ void loop() {
   }*/
 
   x_ref_prev = x_ref;
-
+  float K_P_Speed= Ky_P;
+ float K_I_Speed= Ky_I;
+  float K_D_Speed= D_stop;
   // Calculate reference speed with respect to a reference position
-  refSpeed = P_decreasing_speed(pos, x_ref);
+  refSpeed = P_decreasing_speed(pos, x_ref, average_speed, K_P_Speed, K_I_Speed, K_D_Speed);
 
   // Setting PID constants (stability vs movement)
   /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -1153,10 +1211,13 @@ void loop() {
   pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
   x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
+  yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
+  avail_turn = (255 - abs(x_cmmd));
   
-  Travel(x_cmmd, 0); // Function that instructs motors what to do
+  if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
+  Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
   // time management, making every loop iteration exactly 10ms
   t_end=micros();
@@ -1172,6 +1233,9 @@ void loop() {
   Serial.println(Kp_speed);
   Serial.print("Ki_speed....");
   Serial.println(Ki_speed);
+
+  Serial.print("turn command: ");
+  Serial.println(turn_cmmd);
 
 }
 //PipiFesse
