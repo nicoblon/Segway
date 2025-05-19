@@ -689,7 +689,7 @@ float D_Start(float v_ref, float v_prev){
 // Function that makes the speed decrease as we approach the wanted position
 
 
-float P_decreasing_speed(float x, float x_ref, float spee, float K_P_Speed, float K_I_Speed, float K_D_Speed) {
+float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed) {
     float error = x_ref - x;
 
     // Close enough to target — stop and reset integrator

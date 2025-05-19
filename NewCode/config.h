@@ -81,13 +81,13 @@ extern String turn_cmmd_val;
     float Kp_I = 25;//0.1;
     float Ky_P = 5;//0.5;
     float Ky_I = 0;//1;
-    float MaxSpeed=0.035;
+    float MaxSpeed=0.025;
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
     float t = 0;
-    float Kp_speed=0.25;
-    float Ki_speed=0.005;
+    float Kp_speed=0.2;
+    float Ki_speed=0.01;
     float x_ref = 0;
     float x_ref_prev = 0;
     float speed_err = 0.025;
@@ -100,7 +100,7 @@ extern String turn_cmmd_val;
     float RightMotorAdjustment = 1;
 
     float D_start = 1000;
-    float D_stop = 200;
+    float D_stop = 0;
 
     float sum_power = 0;
     float power = 0;
@@ -112,11 +112,12 @@ extern String turn_cmmd_val;
 
 
   // Tracking of error 
-    float pitch_err=2.25;
+    float pitch_err=0;
     float pre_error=0; 
     float sum_error=0; 
     float sum_p_error=0;
     float sum_y_error=0;
+    float sum_error_speed = 0;
 
     float pos_ref = 0;
     float pitch = 0.0; 
@@ -218,11 +219,12 @@ int sgn(int x);
 float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref);
 int PID_feedback(float pitch_err, float K_P, float K_I, float K_D);
 float D_Start(float v_ref, float v_prev);
-float P_decreasing_speed(float x, float x_ref);
+float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed);
 void resetVariables();
 void Travel(int x_command, int turn_command);
 void updateSpeedBuffer(float newSpeed);
 float averageNonZero(float arr[], int size);
-float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, euler_t* ypr);
+float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn);
+void serverStuff();
 
 #endif

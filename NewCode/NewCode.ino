@@ -91,15 +91,21 @@ void loop() {
     long now; 
   }
 
+  prev_power = power;
+  t = x_ref - pos;
+  power = t - sgn(t) * position_error;
+
+
   // Check if need to reset variables
-  if (abs(t) <= position_error && !hasReset) {
+  /*if (abs(t) <= position_error && !hasReset) {
     resetVariables(t);
     hasReset = true;
-  }else{
+  }else{*/
     if (x_ref != x_ref_prev) {
       hasReset = false;
       K_P = K_P_move;
       K_D = K_D_move;
+      MaxSpeed = 0.025;
       encoder1.setCount(0);
       encoder2.setCount(0);
       rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
@@ -110,18 +116,21 @@ void loop() {
       pos_2 = rad2*R;
       pos = (pos_1 + pos_2)/2;
       yaw_wheels = (pos_1-pos_2)/L * 180/pi;
-      
       prev_pos=0;
-      MaxSpeed = 0.035;
-      position_error= constrain((0.5*x_ref),0,50);
+    }
+    if(average_speed < speed_err && abs(t) < position_error){
+      K_P = K_P_stable;
+      K_D = K_D_stable;
+      x_ref = -100;             // *************************************************************************************** à commmenter
     }
 
-    prev_power = power;                   // updating previous power variable
-    t = x_ref - pos;                      //position error
-    power = t - sgn(t) * position_error;  // calculating power
+    x_ref_prev = x_ref;
+    float K_P_Speed = Kp_speed;
+    float K_I_Speed = Ki_speed;
+    float K_D_Speed = D_stop;
 
     // Calculate reference speed with respect to a reference position
-    refSpeed = P_decreasing_speed(pos, x_ref);
+    refSpeed = P_decreasing_speed(pos, x_ref, average_speed, K_P_Speed, K_I_Speed, K_D_Speed);
 
     // Setting PID constants (stability vs movement)
     /*if(abs(refSpeed) < speed_err){     // if the speed is less than x% of the maximum speed -> stabilize
@@ -135,7 +144,7 @@ void loop() {
     pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
     // Create an input spike when starting motion
-    if(x_ref_prev != x_ref){
+    if(prevSpeed==0 && prevSpeed != refSpeed){
       x=D_Start(refSpeed, prevSpeed);
     }
     /*else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
@@ -146,69 +155,19 @@ void loop() {
     }//Add desired speed 
 
     prevSpeed=average_speed; // updating previous speed variable
-    x_ref_prev = x_ref;
 
     pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
     x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
-    //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+    yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
-   // avail_turn = (255 - abs(x_cmmd));
+    avail_turn = (255 - abs(x_cmmd));
 
-    //if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
+    if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
-<<<<<<< HEAD
-=======
-    Serial.print("K_P_stable: ");
-    Serial.print(K_P_stable);
-    Serial.print(", K_I: ");
-    Serial.print(K_I);
-    Serial.print(", K_D_stable: ");
-    Serial.print(K_D_stable);
-    Serial.print(", K_P_move: ");
-    Serial.print(K_P_move);
-    Serial.print(", K_D_move: ");
-    Serial.print(K_D_move);
-    Serial.print(", Kp_speed: ");
-    Serial.print(Kp_speed);
-    Serial.print(", Ki_speed: ");
-    Serial.print(Ki_speed);
-    Serial.print(", Kp_P: ");
-    Serial.print(Kp_P);
-    Serial.print(", Kp_I: ");
-    Serial.print(Kp_I);
-    Serial.print(", Ky_P: ");
-    Serial.print(Ky_P);
-    Serial.print(", Ky_I: ");
-    Serial.print(Ky_I);
-    Serial.print(", pitch_bias: ");
-    Serial.print(pitch_bias);
-    Serial.print(", LeftMotorAdjustment: ");
-    Serial.print(LeftMotorAdjustment);
-    Serial.print(", RightMotorAdjusment: ");
-    Serial.print(RightMotorAdjustment);
-    Serial.print(", D_start: ");
-    Serial.print(D_start);
-    Serial.print(", D_stop: ");
-    Serial.print(D_stop);
-    Serial.print(", speed_err: ");
-    Serial.print(speed_err);
-    Serial.print(", position_error: ");
-    Serial.print(position_error);
-    Serial.print(", x_ref: ");
-    Serial.print(x_ref);
-    Serial.print(", turn_cmmd: ");
-    Serial.println(turn_cmmd);
-  
-
-    
-
-
-
->>>>>>> 1eeb6dd (un peu d'overshoot)
     // time management, making every loop iteration exactly 10ms
     t_end=micros();
     t_loop=t_end-t_start;
@@ -217,6 +176,6 @@ void loop() {
     }
     DeltaTime = timeOverflow/1000;
     delayMicroseconds(timeOverflow - t_loop);
-  }  
+  //}  
   t_end=micros();
 }

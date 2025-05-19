@@ -63,7 +63,7 @@ float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
 int PID_feedback(float pitch_err, float K_P, float K_I, float K_D){ 
   float error = pitch_err;
   sum_error *= 0.9; //leaky integrator
-  if (abs(error)>0.01) sum_error+=error; //add the current error to the previous one
+  if (abs(error)>0.1) sum_error+=error; //add the current error to the previous one
   
   sum_error = constrain(sum_error, -10, 10);
   
@@ -97,17 +97,44 @@ float D_Start(float v_ref, float v_prev){
 }*/
 
 // Function that makes the speed decrease as we approach the wanted position
-float P_decreasing_speed(float x, float x_ref){
-  if(abs(t) <= position_error) power = 0;
+float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed){
+  float error = x_ref - x;
+
+  // Close enough to target — stop and reset integrator
+  if (abs(error) <= position_error) {
+      sum_error_speed = 0;
+      return 0;
+  }
+
+  // Only accumulate if not saturated (anti-windup)
+  float proportional = Kp_speed * error;
+  float integral = Ki_speed * sum_error_speed;
+  float derivative = - D_stop * speed; 
+  float feedback = proportional + integral +derivative;
+  
+  if (abs(feedback) < MaxSpeed) {
+      sum_error_speed += error;
+      sum_error_speed *= 0.95;  // decay after update
+  }
+
+  // Recompute feedback after integration
+  feedback = Kp_speed * error + Ki_speed * sum_error_speed;
+
+  // Saturate output
+  if (abs(feedback) > MaxSpeed)
+      return sgn(feedback) * MaxSpeed;
+
+  return feedback;
+  /*if(abs(t) <= position_error) power = 0;
   sum_power*=0.95;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
   if (abs(feedback)>MaxSpeed) return (sgn(feedback)*MaxSpeed);
   if ((abs(feedback) < MinSpeed) && power!=0) return (sgn(feedback)*MinSpeed);
-  else return (feedback);
+  else return (feedback);*/
 }
 
-void resetVariables(float sign) {
+void resetVariables() {
   if (hasReset) {
     return;
   }
@@ -115,7 +142,7 @@ void resetVariables(float sign) {
   x_ref_prev = x_ref;
 
   long distance = position_error*64*Rapport/pi;
-  if(sign<0){
+  /*if(sign<0){
     encoder1.setCount(-distance);
     encoder2.setCount(distance);
     prev_pos = position_error;
@@ -123,7 +150,7 @@ void resetVariables(float sign) {
     encoder1.setCount(distance);
     encoder2.setCount(-distance);
     prev_pos = -position_error;
-  }
+  }*/
   /*for(int i = 0; i <= 9; i++){
     updateSpeedBuffer(0);
   }*/
