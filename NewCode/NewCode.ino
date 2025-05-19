@@ -16,7 +16,27 @@
 #endif 
 
 void setup() {
-  // put your setup code here, to run once:
+
+  // GENERATE THE LIST OF COMMANDS OF EACH PREDEFINED PATH
+  generateCommands(path1, numPoints1, commands1, &numCommands1);
+  generateCommands(path2, numPoints2, commands2, &numCommands2);
+  generateCommands(path3, numPoints3, commands3, &numCommands3);
+  generateCommands(path4, numPoints4, commands4, &numCommands4);
+  generateCommands(path5, numPoints5, commands5, &numCommands5);
+
+  numCmd[0] = &numCommands1;
+	numCmd[1] = &numCommands2;
+	numCmd[2] = &numCommands3;
+	numCmd[3] = &numCommands4;
+  numCmd[4] = &numCommands5;
+
+  chosenCommands[0] = &commands1[0];
+	chosenCommands[1] = &commands2[0];
+  chosenCommands[2] = &commands3[0];
+	chosenCommands[3] = &commands4[0];
+	chosenCommands[4] = &commands5[0];
+
+
   Serial.begin(115200); 
   delay(1000);
 
@@ -41,6 +61,9 @@ void setup() {
 
   K_P = K_P_stable; 
   K_D = K_D_stable;
+
+  yaw_offset = -ypr.yaw;
+
   }
 
 void loop() {
@@ -56,6 +79,8 @@ void loop() {
     Serial.print("sensor was reset "); 
     setReports(reportType, reportIntervalUs); 
   } 
+
+  yaw = ypr.yaw - yaw_offset;
 
   // read encoders and convert to radians
   rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
@@ -91,21 +116,81 @@ void loop() {
     long now; 
   }
 
+
+  if (numCommandsChosen > 2) {
+    start = true;
+    if (cntr_yaw == 2) { 
+      funct_yaw_ref ( *(chosenPathCommands + cntr_yaw ) ); //[0] and [1] are ignored as they are initializations (cntr_yaw_pos starts at 2)
+      cntr_yaw += 2;
+    }
+    if ((abs(yaw_wheels - turn_cmmd) < 1) && cntr_pos == 3) {
+      funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
+      cntr_pos += 2;
+    }
+    if ((abs(pos - x_ref) < 1) && (cntr_yaw < cntr_pos) && (cntr_yaw < numCommandsChosen)){ //When position error is small, the segway is at the correct position so it starts to turn in the direction of the next point
+      funct_yaw_ref ( *(chosenPathCommands + cntr_yaw) );
+      cntr_yaw += 2;
+    } 
+    if ((abs(yaw_wheels - turn_cmmd) < 1) && (cntr_pos < cntr_yaw) && (cntr_pos < numCommandsChosen)){ //When yaw error is small, the segway is at the correct angle so it starts to move in the direction of the next point
+      funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
+      cntr_pos += 2;
+    }
+    if ((cntr_yaw == numCommandsChosen) && (cntr_pos == numCommandsChosen+1) && (abs(pos - x_ref) < 1)){
+      reset = true;
+    }
+  }
+
+  if(start){
+    K_P = K_P_move;
+    K_D = K_D_move;
+  }else{
+    K_P = K_P_stable;
+    K_D = K_D_stable;
+  }
+
+  if(reset){
+    encoder1.setCount(0);
+    encoder2.setCount(0);
+    pos_ref = 0;
+    yaw_ref = 0;
+    rad1 = 0;
+    rad2 = 0;
+    pos_1 = 0;
+    pos_2 = 0;
+    pos = 0;
+    yaw = 0;
+    pitch_err=0;
+    pre_error=0; 
+    sum_error=0; 
+    sum_p_error=0;
+    sum_y_error=0;
+    numCommandsChosen = 2;
+    cntr_yaw = 2;
+    cntr_pos = 3;
+    K_P = K_P_stable;
+    K_D = K_D_stable;
+    start = false;
+
+    x = 0;
+    turn_cmmd = 0;
+
+    reset = false;
+  }
+
   prev_power = power;
   t = x_ref - pos;
   power = t - sgn(t) * position_error;
-
 
   // Check if need to reset variables
   /*if (abs(t) <= position_error && !hasReset) {
     resetVariables(t);
     hasReset = true;
-  }else{*/
+  }else{
     if (x_ref != x_ref_prev) {
       hasReset = false;
       K_P = K_P_move;
       K_D = K_D_move;
-      MaxSpeed = 0.025;
+      MaxSpeed = 0.03;
       encoder1.setCount(0);
       encoder2.setCount(0);
       rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
@@ -121,8 +206,8 @@ void loop() {
     if(average_speed < speed_err && abs(t) < position_error){
       K_P = K_P_stable;
       K_D = K_D_stable;
-      x_ref = -100;             // *************************************************************************************** à commmenter
     }
+    */
 
     x_ref_prev = x_ref;
     float K_P_Speed = Kp_speed;

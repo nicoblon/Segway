@@ -99,26 +99,22 @@ float D_Start(float v_ref, float v_prev){
 // Function that makes the speed decrease as we approach the wanted position
 float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed){
   float error = x_ref - x;
+  float feedback;
 
   // Close enough to target — stop and reset integrator
   if (abs(error) <= position_error) {
       sum_error_speed = 0;
       return 0;
   }
-
-  // Only accumulate if not saturated (anti-windup)
-  float proportional = Kp_speed * error;
-  float integral = Ki_speed * sum_error_speed;
-  float derivative = - D_stop * speed; 
-  float feedback = proportional + integral +derivative;
   
   if (abs(feedback) < MaxSpeed) {
       sum_error_speed += error;
       sum_error_speed *= 0.95;  // decay after update
+      feedback = K_P_Speed * error + K_I_Speed * sum_error_speed + K_D_Speed * (error-previous_error)/DeltaTime;
+  }else{
+    sum_error_speed *= 0.95;
+    feedback = K_P_Speed * error + K_I_Speed * sum_error_speed + K_D_Speed * (error-previous_error)/DeltaTime;
   }
-
-  // Recompute feedback after integration
-  feedback = Kp_speed * error + Ki_speed * sum_error_speed;
 
   // Saturate output
   if (abs(feedback) > MaxSpeed)
@@ -228,3 +224,62 @@ float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn){
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }
   
+float calculateAngle(int dx, int dy){
+  float angleAbs;
+  float angle;
+
+  if(dx != 0){
+    angleAbs = abs(atan(dy/dx));
+  }else{
+    if(dy == 0){
+      angleAbs = 0;
+    }else{
+      angleAbs = 90;
+    }
+  }
+
+  angle = sgn(dy) * sgn(dx) * angleAbs;
+  return angle;
+  
+}
+
+int calculateDistance(int dx, int dy){
+  int distance = sgn(dx) * sqrt(pow(dx,2) + pow(dy,2));
+  return distance;
+}
+
+void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
+
+  //initialization
+  commands[0].action = 'R'; // not relevant
+  commands[0].angle = 0; // Segway aligned with the reference axis (x)
+  commands[1].action = 'F'; // Segway is forward-facing
+	commands[1].distance = 0; // not relevant
+
+  *numCommands = 2;
+  struct Coordinates currentPosition = points[0];
+  float previousAngle = 0;
+
+  for(int i = 1; i < numPoints; i++){
+    int dx = points[i].x - points[i-1].x;
+    int dy = points[i].y - points[i-1].y;
+
+    int distance = calculateDistance(dx, dy);
+    float angle = calculateAngle(dx, dy);
+
+    // Storing the commands
+    commands[*numCommands].angle = angle;
+    (*numCommands)++;
+
+    commands[*numCommands].distance = distance;
+    (*numCommands)++;
+  }
+}
+
+void funct_yaw_ref(struct Output command){      // doesn't really need to be a function honestly
+  turn_cmmd += command.angle;
+}
+
+void funct_pos_ref(struct Output command){     // doesn't really need to be a function honestly
+  x_ref += command.distance;
+}

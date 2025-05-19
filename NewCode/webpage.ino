@@ -1,8 +1,8 @@
 #include "config.h"
 
 AsyncWebServer server(80);
-const char* ssid = "Hugh G Rection";
-const char* password = "12345678";
+const char* ssid = "IPhone de Nicolas";
+const char* password = "nicolebg";
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
@@ -486,7 +486,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 document.getElementById("position_errorVal").innerHTML = obj.position_error.toFixed(0);
                 document.getElementById("pitchVal").innerHTML = obj.ypr_pitch.toFixed(2);
                 document.getElementById("x_cmmdVal").innerHTML = obj.x_cmmd.toFixed(0);
-                document.getElementById("posVal").innerHTMML = obj.pos.toFixed(0);
+                document.getElementById("posVal").innerHTMML = obj.position.toFixed(0);
             }
         };
         xhr.send();
@@ -865,13 +865,62 @@ void serverStuff(void){
 
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "{\"yaw_wheels\":" + String(yaw_wheels) + 
-                  ",\"ypr_yaw\":" + String(ypr.yaw) +
+                  ",\"ypr_yaw\":" + String(yaw) +
                   ",\"average_speed\":" + String(average_speed) +
                   ",\"position_error\":" + String(position_error) +
                   ",\"ypr_pitch\":" + String(ypr.pitch) + 
                   ",\"x_cmmd\":" + String(x_cmmd) + 
-                  ",\"pos\":" + String(pos) + "}";
+                  ",\"position\":" + String(pos) + "}";
     request->send(200, "application/json", json);
+  });
+
+  server.on("/cmmd", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    if (request->hasParam("cmd")) {
+      inputMessage = request->getParam("cmd")->value();
+
+      if (inputMessage == "W") {
+        x_ref -= 30; // Positon ref if now -30 cm if we press Forward 
+        start = true;
+      }
+      else if (inputMessage == "S") {
+        x_ref += 30; // Positon ref if now +30 cm if we press Backward
+        start = true;
+      }
+      else if(inputMessage == "X") {
+        reset = true; // Reset all quantities related to segway position to 0 
+                      //and stop the segway
+      }
+      else if(inputMessage == "A") {
+        turn_cmmd += 30; // Rotation of 30° to the left
+        start = true;
+      }
+      else if(inputMessage == "D") {
+        turn_cmmd -= 30; // Rotation of 30° to the right
+        start = true;
+      }
+      else if(inputMessage == "1") {
+        chosenPathCommands = chosenCommands[0];
+        numCommandsChosen = *numCmd[0];    
+      }
+      else if(inputMessage == "2") {
+        chosenPathCommands = chosenCommands[1];
+        numCommandsChosen = *numCmd[1];
+      }
+      else if(inputMessage == "3") {
+        chosenPathCommands = chosenCommands[2];
+        numCommandsChosen = *numCmd[2];
+      }
+      else if(inputMessage == "4") {
+        chosenPathCommands = chosenCommands[3];
+        numCommandsChosen = *numCmd[3];
+      }
+      else if(inputMessage == "5") {
+        chosenPathCommands = chosenCommands[4];
+        numCommandsChosen = *numCmd[4];
+      }
+    }
+     request->send(200, "text/plain", "OK");
   });
 
   server.begin(); 
