@@ -45,13 +45,13 @@ extern String D_stop_val;
 extern String turn_cmmd_val;
 
 //---CONSTANTS---
-    //Rayon roues
+  //Rayon roues
     const int R = 3.2; //[cm]
     const float L = 20.5;
 
     const float pi = 3.14159265;
 
-    //Rapport de réduction du gearhead
+  //Rapport de réduction du gearhead
     const int Rapport = 29; 
     
   //Pin du contrôle moteur
@@ -199,8 +199,6 @@ extern String turn_cmmd_val;
     unsigned long t_start;
     unsigned long t_end;
     unsigned long t_loop;
-
-  
 
 // Accelerometer variables
   Adafruit_BNO08x  bno08x(BNO08X_RESET); 

@@ -233,7 +233,7 @@ const char index_html[] PROGMEM = R"rawliteral(
           <p>Position error: <span id="position_errorVal">Loading...</span></p>
           <p>Pitch: <span id="pitchVal">Loading...</span> deg</p>
           <p>x Command: <span id="x_cmmdVal">Loading...</span></p>
-          <p> pos: <span id="posVal">Loading...</span> cm</p>
+          <p>pos: <span id="posVal">Loading...</span> cm</p>
 
           <div class="section">
             <strong>Thresholds & Errors</strong>
