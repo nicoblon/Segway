@@ -83,7 +83,7 @@ extern String turn_cmmd_val;
     float Kp_I = 25;//0.1;
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
-    float MaxSpeed=0.028;
+    float MaxSpeed=0.026;
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;

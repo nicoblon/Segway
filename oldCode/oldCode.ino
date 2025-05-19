@@ -58,13 +58,13 @@
     float Kp_I = 25;//0.1;
     float Ky_P = 0.5;//0.5;
     float Ky_I = 1.5;//1;
-    float MaxSpeed=0.035;
+    float MaxSpeed=0.025;
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
     float t = 0;
-    float Kp_speed=0.25;
-    float Ki_speed=0.005;
+    float Kp_speed=0.2;
+    float Ki_speed=0.01;
     float x_ref = 0;
     float x_ref_prev = 0;
     float speed_err = 0.025;
@@ -94,6 +94,7 @@
     float sum_error=0; 
     float sum_p_error=0;
     float sum_y_error=0;
+    float sum_error_speed=0;
 
     float pos_ref = 0;
     float pitch = 0.0; 
@@ -671,7 +672,7 @@ float D_Start(float v_ref, float v_prev){
 
 // Function that makes the speed decrease as we approach the wanted position
 float P_decreasing_speed(float x, float x_ref){
-  if(abs(t) <= position_error) power = 0;
+   if(abs(t) <= position_error) power = 0;
   sum_power*=0.95;
   sum_power+=power;
   float feedback = power*Kp_speed+Ki_speed*sum_power;
@@ -1086,17 +1087,31 @@ void loop() {
   power = t - sgn(t) * position_error;  // calculating power
   
 
-  if (abs(t) <= position_error && !hasReset) {
-    resetVariables();
-    hasReset = true;
-  }
-  else{
+  //if (abs(t) <= position_error && !hasReset) {
+    //resetVariables();
+    //hasReset = true;
+  //}
+  //else{
   if (x_ref != x_ref_prev) {
     hasReset = false;
     K_P = K_P_move;
     K_D = K_D_move;
-    MaxSpeed=0.035;
+    MaxSpeed=0.025;
+    encoder1.setCount(0);
+    encoder2.setCount(0);
+    rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
+    rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
+    //Position of the segway in [cm]
+    pos_1 = rad1 * R;
+    pos_2 = rad2 * R;
+    pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
+    prev_pos=0;
 
+
+  }
+  if(average_speed<speed_err && abs(t)<position_error){
+     K_P = K_P_stable;
+    K_D = K_D_stable;
   }
   /*if (abs(pos)> abs(0.6 * x_ref) && !hasReset){
     MaxSpeed=0.02;
@@ -1150,8 +1165,13 @@ void loop() {
     timeOverflow+=100;
   }
   DeltaTime = timeOverflow/1000;
-  delayMicroseconds(timeOverflow - t_loop);}  
+  delayMicroseconds(timeOverflow - t_loop);
+  //}  
   t_end=micros();
+  Serial.print("Kp_speed....");
+  Serial.println(Kp_speed);
+  Serial.print("Ki_speed....");
+  Serial.println(Ki_speed);
 
 }
 //PipiFesse

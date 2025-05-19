@@ -92,12 +92,12 @@ void loop() {
   power = t - sgn(t) * position_error;  // calculating power
 
   // Check if need to reset variables
-  if (abs(t) <= position_error && !hasReset) {
+  /*if (abs(t) <= position_error && !hasReset) {
     resetVariables(t);
     hasReset = true;
 
-  }else{
-    if (x_ref != x_ref_prev) {
+  }else{*/
+  if (x_ref != x_ref_prev) {
       hasReset = false;
       K_P = K_P_move;
       K_D = K_D_move;
@@ -110,7 +110,7 @@ void loop() {
       pos_2 = rad2 * R;
       pos = (pos_1 + pos_2)/2; //Average of the position of the 2 wheels
       prev_pos=0;
-      MaxSpeed = 0.028;
+     //MaxSpeed = 0.028;
       position_error= constrain((0.5*x_ref),0,50);
       
     }
@@ -161,7 +161,7 @@ void loop() {
      Serial.print("refSpeed");
     Serial.print("...");
     Serial.println(refSpeed);
-    //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+    yaw_cmmd=0; // = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
@@ -173,6 +173,6 @@ void loop() {
     }
     DeltaTime = timeOverflow/1000;
     delayMicroseconds(timeOverflow - t_loop);
-  }  
+  //}  
   t_end=micros();
 }

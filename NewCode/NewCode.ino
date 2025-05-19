@@ -152,14 +152,63 @@ void loop() {
 
     x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
 
-    yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
+    //yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
-    avail_turn = (255 - abs(x_cmmd));
+   // avail_turn = (255 - abs(x_cmmd));
 
-    if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
+    //if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
+<<<<<<< HEAD
+=======
+    Serial.print("K_P_stable: ");
+    Serial.print(K_P_stable);
+    Serial.print(", K_I: ");
+    Serial.print(K_I);
+    Serial.print(", K_D_stable: ");
+    Serial.print(K_D_stable);
+    Serial.print(", K_P_move: ");
+    Serial.print(K_P_move);
+    Serial.print(", K_D_move: ");
+    Serial.print(K_D_move);
+    Serial.print(", Kp_speed: ");
+    Serial.print(Kp_speed);
+    Serial.print(", Ki_speed: ");
+    Serial.print(Ki_speed);
+    Serial.print(", Kp_P: ");
+    Serial.print(Kp_P);
+    Serial.print(", Kp_I: ");
+    Serial.print(Kp_I);
+    Serial.print(", Ky_P: ");
+    Serial.print(Ky_P);
+    Serial.print(", Ky_I: ");
+    Serial.print(Ky_I);
+    Serial.print(", pitch_bias: ");
+    Serial.print(pitch_bias);
+    Serial.print(", LeftMotorAdjustment: ");
+    Serial.print(LeftMotorAdjustment);
+    Serial.print(", RightMotorAdjusment: ");
+    Serial.print(RightMotorAdjustment);
+    Serial.print(", D_start: ");
+    Serial.print(D_start);
+    Serial.print(", D_stop: ");
+    Serial.print(D_stop);
+    Serial.print(", speed_err: ");
+    Serial.print(speed_err);
+    Serial.print(", position_error: ");
+    Serial.print(position_error);
+    Serial.print(", x_ref: ");
+    Serial.print(x_ref);
+    Serial.print(", turn_cmmd: ");
+    Serial.println(turn_cmmd);
+  
+
+    
+
+
+
+>>>>>>> 1eeb6dd (un peu d'overshoot)
     // time management, making every loop iteration exactly 10ms
     t_end=micros();
     t_loop=t_end-t_start;

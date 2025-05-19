@@ -1,8 +1,8 @@
 #include "config.h"
 
 AsyncWebServer server(80);
-const char* ssid = "IPhone de Nicolas";
-const char* password = "nicolebg";
+const char* ssid = "Hugh G Rection";
+const char* password = "12345678";
 
 // HTML root page
 const char index_html[] PROGMEM = R"rawliteral(
