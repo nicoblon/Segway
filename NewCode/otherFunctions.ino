@@ -251,9 +251,7 @@ int calculateDistance(int dx, int dy){
 void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
 
   //initialization
-  commands[0].action = 'R'; // not relevant
   commands[0].angle = 0; // Segway aligned with the reference axis (x)
-  commands[1].action = 'F'; // Segway is forward-facing
 	commands[1].distance = 0; // not relevant
 
   *numCommands = 2;

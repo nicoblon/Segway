@@ -179,13 +179,13 @@ extern String turn_cmmd_val;
     const int numPoints2 = 13;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
-    const int numPoints5 = ;
+    const int numPoints5 = 8;
 
-    int numCommmands1 = 0;
-    int numCommmands2 = 0;
-    int numCommmands3 = 0;
-    int numCommmands4 = 0;
-    int numCommmands5 = 0;
+    int numCommands1 = 0;
+    int numCommands2 = 0;
+    int numCommands3 = 0;
+    int numCommands4 = 0;
+    int numCommands5 = 0;
 
     int numCommandsChosen = 2;
 
@@ -231,28 +231,28 @@ struct euler_t {
 struct Coordinates{
   int x;
   int y;
-}
+};
 
 struct Output{
   float angle;
   int distance;
-}
+};
 
 struct Coordinates path1[numPoints1] = {
   {0,0}, {50,0}, {16,12}, {15,48}, {-6,19}, {-40,29}, {-20, 0}, {-40,-29}, {-6,-19}, {15,-48}, {16,-12}, {50,0}, {16,12} 
-}
+};
 struct Coordinates path2[numPoints2] = {
   {0,0}, {50,0}, {0,0}, {15,48}, {0,0}, {-40,29}, {0,0}, {-40,29}, {0,0}, {15,-48}, {0,0}, {50,0}, {0,0},
-}
+};
 struct Coordinates path3[numPoints3] = {
   {0,0}, {50,0}, {34,16}, {31,39}, {8,37}, {-11,49}, {-23,29}, {-45,22}, {-38,0}, {-45,-22}, {-23,-29}, {-11,-49}, {8,-37}, {31,-39}, {34,-16}, {50,0}, {34,16}
-}
+};
 struct Coordinates path4[numPoints4] = {
   {0,0}, {50,0}, {5,9}, {-25,43}, {-10,0}, {-25,-43}, {5,-9}, {50,0}, {5,9}
-}
+};
 struct Coordinates path5[numPoints5] = {
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125,0}, {0,0}
-}
+};
 
 struct Output commands1[2*numPoints1];
 struct Output commands2[2*numPoints2];
@@ -260,8 +260,8 @@ struct Output commands3[2*numPoints3];
 struct Output commands4[2*numPoints4];
 struct Output commands5[2*numPoints5];
 
-struct Output *chosenPathCommmands;
-struct Ouput *chosenCommands[5];
+struct Output* chosenPathCommands;
+struct Output* chosenCommands[5];
 
 void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = true);
 void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees = false);
