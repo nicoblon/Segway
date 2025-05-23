@@ -151,8 +151,8 @@ void loop() {
   if(reset){
     encoder1.setCount(0);
     encoder2.setCount(0);
-    pos_ref = 0;
-    yaw_ref = 0;
+    x_ref = 0;
+    turn_cmmd = 0;
     rad1 = 0;
     rad2 = 0;
     pos_1 = 0;
@@ -161,9 +161,9 @@ void loop() {
     yaw = 0;
     pitch_err=0;
     pre_error=0; 
-    sum_error=0; 
-    sum_p_error=0;
-    sum_y_error=0;
+    //sum_error=0; 
+    //sum_p_error=0;
+    //sum_y_error=0;
     numCommandsChosen = 2;
     cntr_yaw = 2;
     cntr_pos = 3;
@@ -172,7 +172,7 @@ void loop() {
     start = false;
 
     x = 0;
-    turn_cmmd = 0;
+    yaw_cmmd = 0;
 
     reset = false;
   }
@@ -252,6 +252,8 @@ void loop() {
     if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
+
+    Serial.println(start);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();

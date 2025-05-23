@@ -1074,7 +1074,7 @@ void setup() {
     String inputMessage;
     // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
     if (request->hasParam(turn_cmmd_input)) {
-      inputMessage = request->getParam(turn_cmmd_inpus)->value();
+      inputMessage = request->getParam(turn_cmmd_input)->value();
       turn_cmmd_val = inputMessage;
       turn_cmmd = turn_cmmd_val.toFloat();
     }
