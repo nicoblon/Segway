@@ -863,7 +863,7 @@ void serverStuff(void){
      request->send(200, "text/plain", "OK");
   });
 
-  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+  /*server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "{\"yaw_wheels\":" + String(yaw_wheels) + 
                   ",\"ypr_yaw\":" + String(yaw) +
                   ",\"average_speed\":" + String(average_speed) +
@@ -872,7 +872,7 @@ void serverStuff(void){
                   ",\"x_cmmd\":" + String(x_cmmd) + 
                   ",\"position\":" + String(pos) + "}";
     request->send(200, "application/json", json);
-  });
+  });*/
 
   server.on("/cmmd", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
@@ -880,11 +880,11 @@ void serverStuff(void){
       inputMessage = request->getParam("cmd")->value();
 
       if (inputMessage == "W") {
-        x_ref -= 30; // Positon ref if now -30 cm if we press Forward 
+        x_ref += 30; // Positon ref if now -30 cm if we press Forward 
         start = true;
       }
       else if (inputMessage == "S") {
-        x_ref += 30; // Positon ref if now +30 cm if we press Backward
+        x_ref -= 30; // Positon ref if now +30 cm if we press Backward
         start = true;
       }
       else if(inputMessage == "X") {

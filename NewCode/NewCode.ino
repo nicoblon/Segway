@@ -123,19 +123,19 @@ void loop() {
       funct_yaw_ref ( *(chosenPathCommands + cntr_yaw ) ); //[0] and [1] are ignored as they are initializations (cntr_yaw_pos starts at 2)
       cntr_yaw += 2;
     }
-    if ((abs(yaw_wheels - turn_cmmd) < 1) && cntr_pos == 3) {
+    if ((abs(turn_cmmd - yaw_wheels) < 5) && cntr_pos == 3) {
       funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
       cntr_pos += 2;
     }
-    if ((abs(pos - x_ref) < 1) && (cntr_yaw < cntr_pos) && (cntr_yaw < numCommandsChosen)){ //When position error is small, the segway is at the correct position so it starts to turn in the direction of the next point
+    if ((abs(x_ref - pos) < 5) && (cntr_yaw < cntr_pos) && (cntr_yaw < numCommandsChosen)){ //When position error is small, the segway is at the correct position so it starts to turn in the direction of the next point
       funct_yaw_ref ( *(chosenPathCommands + cntr_yaw) );
       cntr_yaw += 2;
-    } 
-    if ((abs(yaw_wheels - turn_cmmd) < 1) && (cntr_pos < cntr_yaw) && (cntr_pos < numCommandsChosen)){ //When yaw error is small, the segway is at the correct angle so it starts to move in the direction of the next point
+    }
+    if ((abs(turn_cmmd - yaw_wheels) < 5) && (cntr_pos < cntr_yaw) && (cntr_pos < numCommandsChosen)){ //When yaw error is small, the segway is at the correct angle so it starts to move in the direction of the next point
       funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
       cntr_pos += 2;
     }
-    if ((cntr_yaw == numCommandsChosen) && (cntr_pos == numCommandsChosen+1) && (abs(pos - x_ref) < 1)){
+    if ((cntr_yaw == numCommandsChosen) && (cntr_pos == numCommandsChosen+1) && (abs(x_ref - pos) < 5)){
       reset = true;
     }
   }
@@ -159,8 +159,8 @@ void loop() {
     pos_2 = 0;
     pos = 0;
     yaw = 0;
-    pitch_err=0;
-    pre_error=0; 
+    //pitch_err=0;
+    //pre_error=0; 
     //sum_error=0; 
     //sum_p_error=0;
     //sum_y_error=0;
@@ -232,6 +232,10 @@ void loop() {
     if(prevSpeed==0 && prevSpeed != refSpeed){
       x=D_Start(refSpeed, prevSpeed);
     }
+    if(abs(t) <= position_error && !hasReset){
+      x = Stop(D_stop, average_speed, prevSpeed);
+      hasReset = true;
+    }
     /*else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
       x=D_stop(average_speed, prevSpeed);
     }*/
@@ -239,12 +243,11 @@ void loop() {
       x = PI_p_feedback(Kp_P, Kp_I, average_speed, refSpeed); // calculating reference angle based on reference speed
     }//Add desired speed 
 
-    prevSpeed=average_speed; // updating previous speed variable
+    prevSpeed = average_speed; // updating previous speed variable
 
     pitch_err = pitch +x ; // adding reference angle to current angle with bias
 
     x_cmmd = PID_feedback(pitch_err, K_P, K_I, K_D); // Computes command to give to the motors (forwards/backwards motion only)
-
     yaw_cmmd = PI_y_feedback(Ky_P, Ky_I, turn_cmmd, yaw_wheels);
 
     avail_turn = (255 - abs(x_cmmd));
@@ -253,7 +256,9 @@ void loop() {
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
 
-    Serial.println(start);
+    Serial.print(cntr_yaw);
+    Serial.print(", ");
+    Serial.println(cntr_pos);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();
