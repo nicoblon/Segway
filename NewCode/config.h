@@ -91,13 +91,13 @@ extern String turn_cmmd_val;
     float prevSpeed=0;
     float x=0;
     float t = 0;
-    float Kp_speed=0.5;
-    float Ki_speed=0.05;
+    float Kp_speed=0.2;
+    float Ki_speed=0.01;
     float x_ref = 0;
     float x_ref_prev = 0;
     float speed_err = 0.025;
     float refSpeed = 0;
-    float position_error = 10;
+    float position_error = 5;
 
     float timeOverflow=10000;
 
@@ -112,7 +112,7 @@ extern String turn_cmmd_val;
     float prev_power = 0;
 
     bool resetALL = false;
-    bool hasReset = true;
+    bool hasReset = false;
     uint8_t resetCount = 0;
 
 
@@ -159,6 +159,8 @@ extern String turn_cmmd_val;
     int yaw_cmmd;
 
     int command;
+    int l;
+    int r;
 
     float pos;
     float yaw;
@@ -271,7 +273,7 @@ void setReports(sh2_SensorId_t reportType, long report_interval);
 int sgn(int x);
 float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref);
 int PID_feedback(float pitch_err, float K_P, float K_I, float K_D);
-int D_Start(float v_ref, float v_prev);
+float D_Start(float v_ref, float v_prev);
 int Stop(float D_stop, float current_speed, float previous_speed);
 float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed);
 void resetVariables();

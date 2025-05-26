@@ -206,8 +206,8 @@ void loop() {
     if(average_speed < speed_err && abs(t) < position_error){
       K_P = K_P_stable;
       K_D = K_D_stable;
-    }
-    */
+    }*/
+    
 
     x_ref_prev = x_ref;
     float K_P_Speed = Kp_speed;
@@ -231,11 +231,11 @@ void loop() {
     // Create an input spike when starting motion
     if(prevSpeed==0 && prevSpeed != refSpeed){
       x=D_Start(refSpeed, prevSpeed);
-    }
+    }/*
     if(abs(t) <= position_error && !hasReset){
       x = Stop(D_stop, average_speed, prevSpeed);
       hasReset = true;
-    }
+    }*/
     /*else if(abs(pos-x_ref)<position_error && average_speed>MinSpeed){
       x=D_stop(average_speed, prevSpeed);
     }*/
@@ -255,10 +255,6 @@ void loop() {
     if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
-
-    Serial.print(cntr_yaw);
-    Serial.print(", ");
-    Serial.println(cntr_pos);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();

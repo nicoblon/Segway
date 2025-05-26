@@ -1,6 +1,6 @@
 #include "config.h"
 
-void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees) { 
+void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = true) { 
 
   float sqr = sq(qr); 
   float sqi = sq(qi); 
@@ -18,11 +18,11 @@ void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, boo
   } 
 }
 
-void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees) { 
+void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees = false) { 
   quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
 } 
 
-void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees) { 
+void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees = false) { 
   quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
 } 
 
@@ -78,7 +78,7 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D) {
   return (feedback);
 }
 
-int D_Start(float v_ref, float v_prev) {
+float D_Start(float v_ref, float v_prev) {
   float error_speed = v_ref - v_prev;
   int feedback = round(D_start * (error_speed / DeltaTime));
   return (feedback);
@@ -92,28 +92,25 @@ float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, flo
   float error = x_ref - x;
 
   // Stop if close enough to target
-  if (abs(error) <= position_error && abs(speed) < 0.01) {
+  if (abs(error) <= position_error){
     sum_error_speed = 0;
-    previous_error_speed = 0;
     return 0;
   }
 
-  // Derivative term (anticipate stopping)
-  float derivative = K_D_Speed * (error - previous_error_speed) / DeltaTime;
-  previous_error_speed = error;
-
-  // Leaky integrator
-  sum_error_speed *= 0.95;  // decay first
-  sum_error_speed += error;
-
-  // Compute PID
-  float proportional = K_P_Speed * error;
-  float integral = K_I_Speed * sum_error_speed;
+  // Only accumulate if not saturated (anti-windup)
+  float proportional = Kp_speed * error;
+  float integral = Ki_speed * sum_error_speed;
+  float derivative = - D_stop * speed;
   float feedback = proportional + integral + derivative;
 
-  // Anti-windup & Saturation
+  if(abs(feedback) < MaxSpeed){
+    sum_error_speed += error;
+    sum_error_speed *= 0.95;  // decay after update
+  }
+
+  // Saturate output
   if (abs(feedback) > MaxSpeed) {
-    feedback = sgn(feedback) * MaxSpeed;
+    return sgn(feedback) * MaxSpeed;
   }
 
   return feedback;
