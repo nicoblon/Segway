@@ -248,14 +248,14 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngle(dx, dy);
 
-    //angle+=previousAngle;
-
-    /*
-    if(angle > 180){
-      angle-=360;
-    }else if(angle < -180){
-      angle+=360;
-    }*/
+    if((angle - previousAngle) < -90){
+      distance *= -1;
+      angle += 180;
+    }
+    if((angle - previousAngle) > 90){
+      distance *= -1;
+      angle -= 180;
+    }
 
     // Storing the commands
     commands[*numCommands].angle = angle - previousAngle;

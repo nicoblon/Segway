@@ -68,9 +68,9 @@ void setup() {
     Serial.print("Command ");
     Serial.print(i);
     Serial.print(": Angle = ");
-    Serial.print(commands5[i].angle);
+    Serial.print(commands1[i].angle);
     Serial.print(", Distance = ");
-    Serial.println(commands5[i].distance);
+    Serial.println(commands1[i].distance);
   }
 
 }
