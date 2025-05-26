@@ -117,7 +117,7 @@ extern String turn_cmmd_val;
 
 
   // Tracking of error 
-    float pitch_err=0;
+    float pitch_err=2.25;
     float pre_error=0; 
     float sum_error=0; 
     float sum_p_error=0;
