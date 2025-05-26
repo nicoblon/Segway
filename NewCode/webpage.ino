@@ -232,7 +232,8 @@ const char index_html[] PROGMEM = R"rawliteral(
           <p>Average speed: <span id="average_speedVal">Loading...</span></p>
           <p>Position error: <span id="position_errorVal">Loading...</span></p>
           <p>Pitch: <span id="pitchVal">Loading...</span> deg</p>
-          <p>x Command: <span id="x_cmmdVal">Loading...</span></p>
+          <p>x_ref: <span id="x_refVal">Loading...</span></p>
+          <p>turn_command: <span id="turn_cmmdVal">Loading...</span></p>
           <p>pos: <span id="posVal">Loading...</span> cm</p>
 
           <div class="section">
@@ -253,6 +254,10 @@ const char index_html[] PROGMEM = R"rawliteral(
             <p><span id="textposition_errorVal">Position Error (current: %position_error%) </span>
             <input type="number" id="pos_err" value="%position_error%" min="0" max="100" step="1"> 
             <button onclick="implement_position_error()">Submit</button></p>
+
+            <p><span id="textMaxSpeedVal">Max Speed (current: %MaxSpeed%) </span>
+            <input type="number" id="MaxS" value="%MaxSpeed%" min="0" max="10" step="0.001"> 
+            <button onclick="implement_MaxSpeed()">Submit</button></p>
           </div>
         </div>
 
@@ -272,11 +277,11 @@ const char index_html[] PROGMEM = R"rawliteral(
 
           <div class="path-buttons">
             <strong>Path Commands</strong><br>
-            <button class="button" onclick="sendcmmd('1')">Path 0</button>
-            <button class="button" onclick="sendcmmd('2')">Path 1</button>
-            <button class="button" onclick="sendcmmd('3')">Path 2</button>
-            <button class="button" onclick="sendcmmd('4')">Path 3</button>
-            <button class="button" onclick="sendcmmd('5')">Path 4</button>
+            <button class="button" onclick="sendcmmd('1')">Path 1</button>
+            <button class="button" onclick="sendcmmd('2')">Path 2</button>
+            <button class="button" onclick="sendcmmd('3')">Path 3</button>
+            <button class="button" onclick="sendcmmd('4')">Path 4</button>
+            <button class="button" onclick="sendcmmd('5')">Path 5</button>
           </div>
 
           <div class="control-cross">
@@ -474,6 +479,15 @@ const char index_html[] PROGMEM = R"rawliteral(
           xhr.send();
       }
 
+      function implement_MaxSpeed(){
+          var MaxSpeed_val = document.getElementById("MaxS").value;
+          document.getElementById("textMaxSpeedVal").innerHTML = "Max Speed (current: " + MaxSpeed_val + ") ";
+          console.log(MaxSpeed_val);
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", "/MaxSpeed?MaxS="+MaxSpeed_val, true);
+          xhr.send();
+      }
+
       function updateData(){
         var xhr = new XMLHttpRequest();
         xhr.open("GET", "/data", true);
@@ -485,7 +499,8 @@ const char index_html[] PROGMEM = R"rawliteral(
                 document.getElementById("average_speedVal").innerHTML = obj.average_speed.toFixed(2);
                 document.getElementById("position_errorVal").innerHTML = obj.position_error.toFixed(0);
                 document.getElementById("pitchVal").innerHTML = obj.ypr_pitch.toFixed(2);
-                document.getElementById("x_cmmdVal").innerHTML = obj.x_cmmd.toFixed(0);
+                document.getElementById("x_refVal").innerHTML = obj.x_ref.toFixed(0);
+                document.getElementById("turn_cmmdVal").innerHTML = obj.turn_cmmd.toFixed(0);
                 document.getElementById("posVal").innerHTMML = obj.position.toFixed(0);
             }
         };
@@ -549,6 +564,8 @@ String processor(const String& var){
     return D_stop_val;
   }else if(var == "turn_cmmd"){
      return turn_cmmd_val;
+  }else if(var == "MaxSpeed"){
+    return MaxSpeed_val;
   }return String();
 }
 
@@ -574,6 +591,7 @@ String processor(const String& var){
   String Ki_speed_val = String(Ki_speed);
   String D_stop_val = String(D_stop);
   String turn_cmmd_val = String(turn_cmmd);
+  String MaxSpeed_val = String(MaxSpeed);
 
 void serverStuff(void){
    // Connect to Wi-Fi
@@ -863,13 +881,27 @@ void serverStuff(void){
      request->send(200, "text/plain", "OK");
   });
 
+  server.on("/MaxSpeed", HTTP_GET, [] (AsyncWebServerRequest *request){
+     String inputMessage;
+     if(request->hasParam(MaxSpeed_input)) {    
+       inputMessage = request->getParam(MaxSpeed_input)->value();
+       MaxSpeed_val = inputMessage;
+       MaxSpeed = MaxSpeed_val.toFloat();
+     }
+     else{
+       inputMessage = "No message sent";
+     }
+     request->send(200, "text/plain", "OK");
+  });
+
   /*server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
     String json = "{\"yaw_wheels\":" + String(yaw_wheels) + 
                   ",\"ypr_yaw\":" + String(yaw) +
                   ",\"average_speed\":" + String(average_speed) +
                   ",\"position_error\":" + String(position_error) +
                   ",\"ypr_pitch\":" + String(ypr.pitch) + 
-                  ",\"x_cmmd\":" + String(x_cmmd) + 
+                  ",\"x_ref\":" + String(x_ref) + 
+                  ",\"turn_cmmd\":" + String(turn_cmmd) +
                   ",\"position\":" + String(pos) + "}";
     request->send(200, "application/json", json);
   });*/
@@ -901,7 +933,7 @@ void serverStuff(void){
       }
       else if(inputMessage == "1") {
         chosenPathCommands = chosenCommands[0];
-        numCommandsChosen = *numCmd[0];    
+        numCommandsChosen = *numCmd[0]; 
       }
       else if(inputMessage == "2") {
         chosenPathCommands = chosenCommands[1];

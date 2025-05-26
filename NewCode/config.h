@@ -48,6 +48,7 @@ extern String position_error_val;
 extern String Ki_speed_val;
 extern String D_stop_val;
 extern String turn_cmmd_val;
+extern String MaxSpeed_val;
 
 //---CONSTANTS---
   //Rayon roues
@@ -81,12 +82,12 @@ extern String turn_cmmd_val;
     float K_D = 0; //value that switches between K_D_stable and K_D_move, not web modifiable
     float K_D_stable = 21;
     float K_D_move = 21;
-    float pitch_bias = 3.3; //change depending on center of gravity
+    float pitch_bias = 4; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
     float Ky_P = 5;//0.5;
     float Ky_I = 0;//1;
-    float MaxSpeed=0.025;
+    float MaxSpeed=0.03;
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
@@ -215,6 +216,7 @@ extern String turn_cmmd_val;
     const char* Ki_speed_input = "KI_sp";
     const char* D_stop_input = "Dsp";
     const char* turn_cmmd_input = "t_c";
+    const char* MaxSpeed_input = "MaxS";
 
     //Timing terms
     unsigned long t_start;

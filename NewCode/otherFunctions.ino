@@ -1,6 +1,6 @@
 #include "config.h"
 
-void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = true) { 
+void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees) { 
 
   float sqr = sq(qr); 
   float sqi = sq(qi); 
@@ -18,11 +18,11 @@ void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, boo
   } 
 }
 
-void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees = false) { 
+void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees) { 
   quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
 } 
 
-void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees = false) { 
+void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees) { 
   quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
 } 
 
@@ -202,28 +202,32 @@ float PI_y_feedback(float Ky_P, float Ky_I, float yaw_ref, float yawIn) {
   return feedback;
   //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }
-  
-float calculateAngle(int dx, int dy){
-  float angleAbs;
-  float angle;
 
-  if(dx != 0){
-    angleAbs = abs(atan(dy/dx));
+float calculateAngle(int dx, int dy){
+  //float angleAbs;
+  float angle = 0;
+
+  if(dy != 0){
+    angle = atan2(dy, dx) *180 / pi;
   }else{
-    if(dy == 0){
-      angleAbs = 0;
+    if(dx < 0){
+      angle = 180;
     }else{
-      angleAbs = 90;
+      angle = 0;
     }
   }
 
-  angle = sgn(dy) * sgn(dx) * angleAbs;
+  if(angle < 180){
+    angle += 360;
+  }else if(angle > 180){
+    angle -= 360;
+  }
+
   return angle;
-  
 }
 
 int calculateDistance(int dx, int dy){
-  int distance = sgn(dx) * sqrt(pow(dx,2) + pow(dy,2));
+  int distance = sqrt(pow(dx,2) + pow(dy,2));
   return distance;
 }
 
@@ -244,9 +248,19 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngle(dx, dy);
 
+    //angle+=previousAngle;
+
+    /*
+    if(angle > 180){
+      angle-=360;
+    }else if(angle < -180){
+      angle+=360;
+    }*/
+
     // Storing the commands
-    commands[*numCommands].angle = angle;
+    commands[*numCommands].angle = angle - previousAngle;
     (*numCommands)++;
+    previousAngle = angle;
 
     commands[*numCommands].distance = distance;
     (*numCommands)++;

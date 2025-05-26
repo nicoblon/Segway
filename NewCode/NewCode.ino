@@ -64,7 +64,16 @@ void setup() {
 
   yaw_offset = -ypr.yaw;
 
+  for (int i = 0; i < 2 * numPoints1; i++) {
+    Serial.print("Command ");
+    Serial.print(i);
+    Serial.print(": Angle = ");
+    Serial.print(commands5[i].angle);
+    Serial.print(", Distance = ");
+    Serial.println(commands5[i].distance);
   }
+
+}
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -123,15 +132,15 @@ void loop() {
       funct_yaw_ref ( *(chosenPathCommands + cntr_yaw ) ); //[0] and [1] are ignored as they are initializations (cntr_yaw_pos starts at 2)
       cntr_yaw += 2;
     }
-    if ((abs(turn_cmmd - yaw_wheels) < 5) && cntr_pos == 3) {
+    if ((abs(turn_cmmd - yaw_wheels) < 2) && cntr_pos == 3) {
       funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
       cntr_pos += 2;
     }
-    if ((abs(x_ref - pos) < 5) && (cntr_yaw < cntr_pos) && (cntr_yaw < numCommandsChosen)){ //When position error is small, the segway is at the correct position so it starts to turn in the direction of the next point
+    if ((abs(x_ref - pos) < position_error) && (cntr_yaw < cntr_pos) && (cntr_yaw < numCommandsChosen)){ //When position error is small, the segway is at the correct position so it starts to turn in the direction of the next point
       funct_yaw_ref ( *(chosenPathCommands + cntr_yaw) );
       cntr_yaw += 2;
     }
-    if ((abs(turn_cmmd - yaw_wheels) < 5) && (cntr_pos < cntr_yaw) && (cntr_pos < numCommandsChosen)){ //When yaw error is small, the segway is at the correct angle so it starts to move in the direction of the next point
+    if ((abs(turn_cmmd - yaw_wheels) < 2) && (cntr_pos < cntr_yaw) && (cntr_pos < numCommandsChosen)){ //When yaw error is small, the segway is at the correct angle so it starts to move in the direction of the next point
       funct_pos_ref ( *(chosenPathCommands + cntr_pos) );
       cntr_pos += 2;
     }
@@ -159,11 +168,14 @@ void loop() {
     pos_2 = 0;
     pos = 0;
     yaw = 0;
-    //pitch_err=0;
-    //pre_error=0; 
-    //sum_error=0; 
-    //sum_p_error=0;
-    //sum_y_error=0;
+    /*pitch_err=0;
+    pre_error=0; 
+    sum_error=0; 
+    sum_p_error=0;
+    sum_y_error=0;
+    sum_error_speed = 0;
+    previous_error_speed = 0;
+    previous_error = 0;*/
     numCommandsChosen = 2;
     cntr_yaw = 2;
     cntr_pos = 3;
