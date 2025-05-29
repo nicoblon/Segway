@@ -183,7 +183,7 @@ extern String MaxSpeed_val;
     const int numPoints2 = 13;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
-    const int numPoints5 = 8;
+    const int numPoints5 = 9;
 
     int numCommands1 = 0;
     int numCommands2 = 0;
@@ -256,7 +256,7 @@ struct Coordinates path4[numPoints4] = {
   {0,0}, {50,0}, {5,9}, {-25,43}, {-10,0}, {-25,-43}, {5,-9}, {50,0}, {5,9}
 };
 struct Coordinates path5[numPoints5] = {
-  {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125,0}, {0,0}
+  {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0}, {0,0}
 };
 
 struct Output commands1[2*numPoints1];

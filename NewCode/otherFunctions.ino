@@ -208,7 +208,7 @@ float calculateAngle(int dx, int dy){
   float angle = 0;
 
   if(dy != 0){
-    angle = atan2(dy, dx) *180 / pi;
+    angle = atan2(dy, dx) * 180 / pi;
   }else{
     if(dx < 0){
       angle = 180;
@@ -217,7 +217,7 @@ float calculateAngle(int dx, int dy){
     }
   }
 
-  if(angle < 180){
+  if(angle < -180){
     angle += 360;
   }else if(angle > 180){
     angle -= 360;
@@ -268,9 +268,9 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
 }
 
 void funct_yaw_ref(struct Output command){      // doesn't really need to be a function honestly
-  turn_cmmd += command.angle;
+  turn_cmmd += command.angle * 0.92;
 }
 
 void funct_pos_ref(struct Output command){     // doesn't really need to be a function honestly
-  x_ref += command.distance;
+  x_ref += command.distance * 0.92;
 }
