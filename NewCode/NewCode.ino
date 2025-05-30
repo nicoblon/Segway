@@ -149,55 +149,25 @@ void loop() {
     }
   }
 
-  if(start){
-    K_P = K_P_move;
-    K_D = K_D_move;
-  }else{
-    K_P = K_P_stable;
-    K_D = K_D_stable;
-  }
-
-  if (x_ref != x_ref_prev) {
-      hasReset = false;
-      K_P = K_P_move;
-      K_D = K_D_move;
-      //MaxSpeed = 0.03;
-      //encoder1.setCount(0);
-      //encoder2.setCount(0);
-      //rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
-      //rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
-
-      //Position of the segway in [cm]
-      //pos_1 = rad1*R;
-      //pos_2 = rad2*R;
-      //pos = (pos_1 + pos_2)/2;
-      //yaw_wheels = (pos_1-pos_2)/L * 180/pi;
-      //prev_pos=0;
-    }
-    if(abs(t) <= position_error){
-      K_P = K_P_stable;
-      K_D = K_D_stable;
-    }
-
   if(reset){
-    encoder1.setCount(0);
-    encoder2.setCount(0);
-    x_ref = 0;
-    turn_cmmd = 0;
+    //encoder1.setCount(0);
+    //encoder2.setCount(0);
+    x_ref = pos;
+    turn_cmmd = yaw_wheels;
     //rad1 = 0;
     //rad2 = 0;
     //pos_1 = 0;
     //pos_2 = 0;
     //pos = 0;
 
-    /*pitch_err=0;
-    pre_error=0; 
-    sum_error=0; 
-    sum_p_error=0;
-    sum_y_error=0;
-    sum_error_speed = 0;
-    previous_error_speed = 0;
-    previous_error = 0;*/
+    //pitch_err=0;
+    //pre_error=0; 
+    //sum_error=0; 
+    //sum_p_error=0;
+    //sum_y_error=0;
+    //sum_error_speed = 0;
+    //previous_error_speed = 0;
+    //previous_error = 0;
     numCommandsChosen = 2;
     cntr_yaw = 2;
     cntr_pos = 3;
@@ -206,39 +176,71 @@ void loop() {
     start = false;
     circuit = false;
     reset = false;
-  }
-
-  prev_power = power;
-  t = x_ref - pos;
-  power = t - sgn(t) * position_error;
-
-  // Check if need to reset variables
-  /*if (abs(t) <= position_error && !hasReset) {
-    resetVariables(t);
-    hasReset = true;
   }else{
-    if (x_ref != x_ref_prev) {
-      hasReset = false;
+
+    if(start){
       K_P = K_P_move;
       K_D = K_D_move;
-      MaxSpeed = 0.03;
-      encoder1.setCount(0);
-      encoder2.setCount(0);
-      rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
-      rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
-
-      //Position of the segway in [cm]
-      pos_1 = rad1*R;
-      pos_2 = rad2*R;
-      pos = (pos_1 + pos_2)/2;
-      yaw_wheels = (pos_1-pos_2)/L * 180/pi;
-      prev_pos=0;
-    }
-    if(average_speed < speed_err && abs(t) < position_error){
+    }else{
       K_P = K_P_stable;
       K_D = K_D_stable;
-    }*/
+    }
+
+    /*if (x_ref != x_ref_prev) {
+        hasReset = false;
+        K_P = K_P_move;
+        K_D = K_D_move;
+        //MaxSpeed = 0.03;
+        //encoder1.setCount(0);
+        //encoder2.setCount(0);
+        //rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
+        //rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
+
+        //Position of the segway in [cm]
+        //pos_1 = rad1*R;
+        //pos_2 = rad2*R;
+        //pos = (pos_1 + pos_2)/2;
+        //yaw_wheels = (pos_1-pos_2)/L * 180/pi;
+        //prev_pos=0;
+      }
+      /*if(abs(t) <= position_error){
+        K_P = K_P_stable;
+        K_D = K_D_stable;
+      }*/
+
     
+
+    prev_power = power;
+    t = x_ref - pos;
+    power = t - sgn(t) * position_error;
+
+    // Check if need to reset variables
+    /*if (abs(t) <= position_error && !hasReset) {
+      resetVariables(t);
+      hasReset = true;
+    }else{
+      if (x_ref != x_ref_prev) {
+        hasReset = false;
+        K_P = K_P_move;
+        K_D = K_D_move;
+        MaxSpeed = 0.03;
+        encoder1.setCount(0);
+        encoder2.setCount(0);
+        rad1 = -(encoder1.getCount()/4)*2*pi / (32*Rapport); 
+        rad2 = (encoder2.getCount()/4)*2*pi / (32*Rapport); 
+
+        //Position of the segway in [cm]
+        pos_1 = rad1*R;
+        pos_2 = rad2*R;
+        pos = (pos_1 + pos_2)/2;
+        yaw_wheels = (pos_1-pos_2)/L * 180/pi;
+        prev_pos=0;
+      }
+      if(average_speed < speed_err && abs(t) < position_error){
+        K_P = K_P_stable;
+        K_D = K_D_stable;
+      }*/
+      
 
     x_ref_prev = x_ref;
     float K_P_Speed = Kp_speed;
@@ -297,6 +299,6 @@ void loop() {
     }
     DeltaTime = timeOverflow/1000;
     delayMicroseconds(timeOverflow - t_loop);
-  //}  
+  }  
   t_end=micros();
 }

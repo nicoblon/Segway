@@ -76,13 +76,13 @@ extern String MaxSpeed_val;
 
   // Controllers parameters
     float K_P = 0; //value that switches between K_P_stable and K_P_move, not web modifiable
-    float K_P_stable = 7; //11
+    float K_P_stable = 11;
     float K_P_move = 7;
     float K_I = 0.6;
     float K_D = 0; //value that switches between K_D_stable and K_D_move, not web modifiable
     float K_D_stable = 21;
     float K_D_move = 21;
-    float pitch_bias = 3.8; //change depending on center of gravity
+    float pitch_bias = 1.8; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
     float Ky_P = 5;//0.5;
@@ -151,7 +151,7 @@ extern String MaxSpeed_val;
     float pos_2;
     float prev_pos=0;
     const int max_v = 255; 
-    const int max_angle = 30;
+    const int max_angle = 50;
 
     int x_cmmd;
     int x_cmmd_prev = 0;
