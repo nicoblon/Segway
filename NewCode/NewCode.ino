@@ -174,7 +174,7 @@ void loop() {
       //yaw_wheels = (pos_1-pos_2)/L * 180/pi;
       //prev_pos=0;
     }
-    if(average_speed < speed_err && abs(t) < position_error){
+    if(abs(t) <= position_error){
       K_P = K_P_stable;
       K_D = K_D_stable;
     }
@@ -184,12 +184,12 @@ void loop() {
     encoder2.setCount(0);
     x_ref = 0;
     turn_cmmd = 0;
-    rad1 = 0;
-    rad2 = 0;
-    pos_1 = 0;
-    pos_2 = 0;
-    pos = 0;
-    yaw = 0;
+    //rad1 = 0;
+    //rad2 = 0;
+    //pos_1 = 0;
+    //pos_2 = 0;
+    //pos = 0;
+
     /*pitch_err=0;
     pre_error=0; 
     sum_error=0; 
@@ -204,10 +204,7 @@ void loop() {
     K_P = K_P_stable;
     K_D = K_D_stable;
     start = false;
-
-    x = 0;
-    yaw_cmmd = 0;
-
+    circuit = false;
     reset = false;
   }
 
@@ -263,7 +260,7 @@ void loop() {
     pitch = ypr.pitch - pitch_bias; // adjusting pitch with bias
 
     // Create an input spike when starting motion
-    if(prevSpeed==0 && prevSpeed != refSpeed){
+    if(x_ref!=x_ref_prev && prevSpeed != refSpeed){
       x=D_Start(refSpeed, prevSpeed);
     }/*
     if(abs(t) <= position_error && !hasReset){
@@ -289,6 +286,8 @@ void loop() {
     if(abs(yaw_cmmd) > avail_turn) yaw_cmmd = sgn(yaw_cmmd) * avail_turn;
 
     Travel(x_cmmd, yaw_cmmd); // Function that instructs motors what to do
+
+    Serial.println(circuit);
 
     // time management, making every loop iteration exactly 10ms
     t_end=micros();

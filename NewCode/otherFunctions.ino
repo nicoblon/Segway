@@ -55,7 +55,7 @@ float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
   Kp_int = Kp_I * sum_p_error;  //Integral part
 
   int pitch_cmmd = round(Kp_prop + Kp_int);
-  if (abs(pitch_cmmd) > max_v) pitch_cmmd = sgn(pitch_cmmd) * max_v;  //limit the feedback from min -255 to the max 255
+  if (abs(pitch_cmmd) > max_angle) pitch_cmmd = sgn(pitch_cmmd) * max_angle;  //limit the feedback from min -255 to the max 255
 
   return (pitch_cmmd);
 }
@@ -217,11 +217,13 @@ float calculateAngle(int dx, int dy){
     }
   }
 
-  if(angle < -180){
-    angle += 360;
-  }else if(angle > 180){
-    angle -= 360;
-  }
+  /*if(!circuit){
+    if(angle < -180){
+      angle += 360;
+    }else if(angle > 180){
+      angle -= 360;
+    }
+  }*/
 
   return angle;
 }
@@ -248,17 +250,25 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngle(dx, dy);
 
-    if((angle - previousAngle) < -90){
-      distance *= -1;
-      angle += 180;
+    if(!circuit){
+      if((angle - previousAngle) < -90){
+        distance *= -1;
+        angle += 180;
+      }
+      if((angle - previousAngle) > 90){
+        distance *= -1;
+        angle -= 180;
+      }
     }
-    if((angle - previousAngle) > 90){
-      distance *= -1;
-      angle -= 180;
-    }
+    
 
     // Storing the commands
-    commands[*numCommands].angle = angle - previousAngle;
+    if(circuit){
+      commands[*numCommands].angle = angle;
+    }else{
+      commands[*numCommands].angle = angle - previousAngle;
+    }
+    
     (*numCommands)++;
     previousAngle = angle;
 
@@ -268,9 +278,9 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
 }
 
 void funct_yaw_ref(struct Output command){      // doesn't really need to be a function honestly
-  turn_cmmd += command.angle * 0.92;
+  turn_cmmd += command.angle * LeftMotorAdjustment;
 }
 
 void funct_pos_ref(struct Output command){     // doesn't really need to be a function honestly
-  x_ref += command.distance * 0.92;
+  x_ref += command.distance * RightMotorAdjustment;
 }

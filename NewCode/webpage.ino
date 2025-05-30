@@ -912,11 +912,11 @@ void serverStuff(void){
       inputMessage = request->getParam("cmd")->value();
 
       if (inputMessage == "W") {
-        x_ref += 30; // Positon ref if now -30 cm if we press Forward 
+        x_ref += 100; // Positon ref if now -30 cm if we press Forward 
         start = true;
       }
       else if (inputMessage == "S") {
-        x_ref -= 30; // Positon ref if now +30 cm if we press Backward
+        x_ref -= 100; // Positon ref if now +30 cm if we press Backward
         start = true;
       }
       else if(inputMessage == "X") {
@@ -924,11 +924,11 @@ void serverStuff(void){
                       //and stop the segway
       }
       else if(inputMessage == "A") {
-        turn_cmmd += 30; // Rotation of 30° to the left
+        turn_cmmd += 45; // Rotation of 30° to the left
         start = true;
       }
       else if(inputMessage == "D") {
-        turn_cmmd -= 30; // Rotation of 30° to the right
+        turn_cmmd -= 45; // Rotation of 30° to the right
         start = true;
       }
       else if(inputMessage == "1") {
@@ -950,6 +950,7 @@ void serverStuff(void){
       else if(inputMessage == "5") {
         chosenPathCommands = chosenCommands[4];
         numCommandsChosen = *numCmd[4];
+        circuit = true;
       }
     }
      request->send(200, "text/plain", "OK");

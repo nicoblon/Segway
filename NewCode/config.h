@@ -76,18 +76,18 @@ extern String MaxSpeed_val;
 
   // Controllers parameters
     float K_P = 0; //value that switches between K_P_stable and K_P_move, not web modifiable
-    float K_P_stable = 14;
+    float K_P_stable = 7; //11
     float K_P_move = 7;
     float K_I = 0.6;
     float K_D = 0; //value that switches between K_D_stable and K_D_move, not web modifiable
     float K_D_stable = 21;
     float K_D_move = 21;
-    float pitch_bias = 4; //change depending on center of gravity
+    float pitch_bias = 3.8; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
     float Ky_P = 5;//0.5;
     float Ky_I = 0;//1;
-    float MaxSpeed=0.03;
+    float MaxSpeed=0.035;
     float MinSpeed=0.02;
     float prevSpeed=0;
     float x=0;
@@ -96,14 +96,14 @@ extern String MaxSpeed_val;
     float Ki_speed=0.01;
     float x_ref = 0;
     float x_ref_prev = 0;
-    float speed_err = 0.025;
+    float speed_err = 0.035;
     float refSpeed = 0;
     float position_error = 5;
 
     float timeOverflow=10000;
 
-    float LeftMotorAdjustment = 1;  //0.975
-    float RightMotorAdjustment = 1;
+    float LeftMotorAdjustment = 0.89;
+    float RightMotorAdjustment = 0.91;
 
     float D_start = 1000;
     float D_stop = 0;
@@ -151,6 +151,7 @@ extern String MaxSpeed_val;
     float pos_2;
     float prev_pos=0;
     const int max_v = 255; 
+    const int max_angle = 30;
 
     int x_cmmd;
     int x_cmmd_prev = 0;
@@ -178,12 +179,14 @@ extern String MaxSpeed_val;
     // Boolean used to check if the robot started its trajectory after the initial balancing phase
     bool start = false;
 
+    bool circuit = false;
+
     // Path points
     const int numPoints1 = 13;
     const int numPoints2 = 13;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
-    const int numPoints5 = 9;
+    const int numPoints5 = 25;
 
     int numCommands1 = 0;
     int numCommands2 = 0;
@@ -247,7 +250,7 @@ struct Coordinates path1[numPoints1] = {
   {0,0}, {50,0}, {16,12}, {15,48}, {-6,19}, {-40,29}, {-20, 0}, {-40,-29}, {-6,-19}, {15,-48}, {16,-12}, {50,0}, {16,12} 
 };
 struct Coordinates path2[numPoints2] = {
-  {0,0}, {50,0}, {0,0}, {15,48}, {0,0}, {-40,29}, {0,0}, {-40,29}, {0,0}, {15,-48}, {0,0}, {50,0}, {0,0},
+  {0,0}, {50,0}, {0,0}, {15,48}, {0,0}, {-40,29}, {0,0}, {-40,-29}, {0,0}, {15,-48}, {0,0}, {50,0}, {0,0},
 };
 struct Coordinates path3[numPoints3] = {
   {0,0}, {50,0}, {34,16}, {31,39}, {8,37}, {-11,49}, {-23,29}, {-45,22}, {-38,0}, {-45,-22}, {-23,-29}, {-11,-49}, {8,-37}, {31,-39}, {34,-16}, {50,0}, {34,16}
@@ -256,6 +259,8 @@ struct Coordinates path4[numPoints4] = {
   {0,0}, {50,0}, {5,9}, {-25,43}, {-10,0}, {-25,-43}, {5,-9}, {50,0}, {5,9}
 };
 struct Coordinates path5[numPoints5] = {
+  {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0},
+  {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0},
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0}, {0,0}
 };
 
