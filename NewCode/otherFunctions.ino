@@ -207,15 +207,27 @@ float calculateAngle(int dx, int dy){
   //float angleAbs;
   float angle = 0;
 
+
   if(dy != 0){
     angle = atan2(dy, dx) * 180 / pi;
-  }else{
+  }
+  /*else if(dx==0){
+      if(dy<0){
+        angle=-90;
+      }
+      else{
+        angle=90;
+      }
+  }*/
+  else{
     if(dx < 0){
       angle = 180;
-    }else{
+    }
+    else{
       angle = 0;
     }
   }
+ 
 
   /*if(!circuit){
     if(angle < -180){
@@ -224,6 +236,36 @@ float calculateAngle(int dx, int dy){
       angle -= 360;
     }
   }*/
+
+  return angle;
+}
+
+float calculateAngleCircuit(int dx, int dy, int previousAngle){
+
+  float angle;
+
+  angle = atan2(dy, dx)*180/pi;
+
+  if(dy == 0){
+    if(dx < 0){
+      if(previousAngle < 0 && previousAngle > -180) angle = -180;
+      else angle = 180;
+    }else{
+      angle = 0;
+    }
+  }
+  if(dx==0){
+    if(dy<0){
+      if(previousAngle < 90 && previousAngle > -90) angle = -90;
+      else angle = 90;
+    }
+    else{
+      if(previousAngle < 90 && previousAngle > -90) angle = 90;
+      else angle = -90;
+    }
+  }
+
+
 
   return angle;
 }
@@ -250,24 +292,47 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngle(dx, dy);
 
-    if(!circuit){
-      if((angle - previousAngle) < -90){
-        distance *= -1;
-        angle += 180;
-      }
-      if((angle - previousAngle) > 90){
-        distance *= -1;
-        angle -= 180;
-      }
+    if((angle - previousAngle) < -90){
+      distance *= -1;
+      angle += 180;
+    }
+    
+    if((angle - previousAngle) > 90){
+      distance *= -1;
+      angle -= 180;
     }
     
 
     // Storing the commands
-    if(circuit){
-      commands[*numCommands].angle = angle;
-    }else{
-      commands[*numCommands].angle = angle - previousAngle;
-    }
+    commands[*numCommands].angle = angle - previousAngle;
+    
+    (*numCommands)++;
+    previousAngle = angle;
+
+    commands[*numCommands].distance = distance;
+    (*numCommands)++;
+  }
+}
+
+void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
+
+  //initialization
+  commands[0].angle = 0; // Segway aligned with the reference axis (x)
+	commands[1].distance = 0; // not relevant
+
+  *numCommands = 2;
+  struct Coordinates currentPosition = points[0];
+  float previousAngle = 0;
+
+  for(int i = 1; i < numPoints; i++){
+    int dx = points[i].x - points[i-1].x;
+    int dy = points[i].y - points[i-1].y;
+
+    int distance = calculateDistance(dx, dy);
+    float angle = calculateAngleCircuit(dx, dy, previousAngle);
+
+    // Storing the commands
+    commands[*numCommands].angle = angle - previousAngle;
     
     (*numCommands)++;
     previousAngle = angle;

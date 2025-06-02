@@ -102,7 +102,7 @@ extern String MaxSpeed_val;
 
     float timeOverflow=10000;
 
-    float LeftMotorAdjustment = 0.89;
+    float LeftMotorAdjustment = 0.93;
     float RightMotorAdjustment = 0.91;
 
     float D_start = 1000;
@@ -187,16 +187,18 @@ extern String MaxSpeed_val;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
     const int numPoints5 = 25;
+    const int numPoints6 = 9;
 
     int numCommands1 = 0;
     int numCommands2 = 0;
     int numCommands3 = 0;
     int numCommands4 = 0;
     int numCommands5 = 0;
+    int numCommands6 = 0;
 
     int numCommandsChosen = 2;
 
-    int *numCmd[5];
+    int *numCmd[6];
 
     // PID field
     const char* P_input_S = "KPS";
@@ -263,15 +265,19 @@ struct Coordinates path5[numPoints5] = {
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0},
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0}, {0,0}
 };
+struct Coordinates path6[numPoints6] = {
+  {0,0}, {195,30}, {195,70}, {45,140}, {-30,225}, {-110,225}, {-140,180},{-95, 20}, {0,0}
+};
 
 struct Output commands1[2*numPoints1];
 struct Output commands2[2*numPoints2];
 struct Output commands3[2*numPoints3];
 struct Output commands4[2*numPoints4];
 struct Output commands5[2*numPoints5];
+struct Output commands6[2*numPoints6];
 
 struct Output* chosenPathCommands;
-struct Output* chosenCommands[5];
+struct Output* chosenCommands[6];
 
 void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees = true);
 void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees = false);
@@ -292,6 +298,7 @@ void serverStuff();
 float calculateAngle(int dx, int dy);
 int calculateDistance(int dx, int dy);
 void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands);
+void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands);
 void funct_yaw_ref(struct Output command);
 void funct_pos_ref(struct Output command);
 

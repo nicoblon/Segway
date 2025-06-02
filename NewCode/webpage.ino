@@ -145,7 +145,8 @@ const char index_html[] PROGMEM = R"rawliteral(
           <button class="button" onclick="sendcmmd('2')">Path 2</button>
           <button class="button" onclick="sendcmmd('3')">Path 3</button>
           <button class="button" onclick="sendcmmd('4')">Path 4</button>
-          <button class="button" onclick="sendcmmd('5')">Path 5</button>
+          <button class="button" onclick="sendcmmd('5')">Circuit</button>
+          <button class="button" onclick="sendcmmd('6')">Circuit2</button>
         </div>
 
         <div class="control-cross">
@@ -171,13 +172,21 @@ const char index_html[] PROGMEM = R"rawliteral(
       <input type="number" id="RMot" value="%RightMotorAdjustment%" min="0" max="1" step="0.01"> 
       <button onclick="implement_RightMotorAdjustment()">Submit</button></p>
 
-      <p><span id="textKp_speedVal">Prop. Gain (current: %Kp_speed%) </span>
+      <p><span id="textKp_speedVal">Speed Prop. Gain (current: %Kp_speed%) </span>
       <input type="number" id="KP_sp" value="%Kp_speed%" min="0" max="10000" step="1"> 
       <button onclick="implement_Kp_speed()">Submit</button></p>
 
-      <p><span id="textKi_speedVal">Integral Gain (current: %Ki_speed%) </span>
+      <p><span id="textKi_speedVal">Speed Integral Gain (current: %Ki_speed%) </span>
       <input type="number" id="KI_sp" value="%Ki_speed%" min="0" max="10000" step="1"> 
       <button onclick="implement_Ki_speed()">Submit</button></p>
+
+      <p><span id="textKPyVal">Yaw Prop. Gain (current: %Ky_P%) </span>
+      <input type="number" id="KPY" value="%Ky_P%" min="0" max="100" step="1"> 
+      <button onclick="implement_KyP()">Submit</button></p>
+
+      <p><span id="textKIyVal">Yaw Integral Gain (current: %Ky_I%) </span>
+      <input type="number" id="KIY" value="%Ky_I%" min="0" max="10" step="0.05">
+        <button onclick="implement_KyI()">Submit</button></p>
 
     <script>
 
@@ -216,7 +225,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
       function implement_Kp_speed(){
           var Kp_speed_val = document.getElementById("KP_sp").value;
-          document.getElementById("textKp_speedVal").innerHTML = "Prop. Gain (current: " + Kp_speed_val + ") ";
+          document.getElementById("textKp_speedVal").innerHTML = "Speed Prop. Gain (current: " + Kp_speed_val + ") ";
           console.log(Kp_speed_val);
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/kpspeed?KP_sp="+Kp_speed_val, true);
@@ -225,11 +234,29 @@ const char index_html[] PROGMEM = R"rawliteral(
 
       function implement_Ki_speed(){
           var Ki_speed_val = document.getElementById("KI_sp").value;
-          document.getElementById("textKi_speedVal").innerHTML = "Integral Gain (current: " + Ki_speed_val + ") ";
+          document.getElementById("textKi_speedVal").innerHTML = "Speed Integral Gain (current: " + Ki_speed_val + ") ";
           console.log(Ki_speed_val);
           var xhr = new XMLHttpRequest();
           xhr.open("GET", "/kispeed?KI_sp="+Ki_speed_val, true);
           xhr.send();
+      }
+
+      function implement_KyP(){
+        var Ky_P_val = document.getElementById("KPY").value;
+        document.getElementById("textKPyVal").innerHTML = "Yaw Prop. Gain (current: " + Ky_P_val + ") ";
+        console.log(Ky_P_val);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/kpyaw?KPY="+Ky_P_val, true);
+        xhr.send();
+      }
+
+      function implement_KyI(){
+        var Ky_I_val = document.getElementById("KIY").value;
+        document.getElementById("textKIyVal").innerHTML = "Yaw Integral Gain (current: " + Ky_I_val + ") ";
+        console.log(Ky_I_val);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "/kiyaw?KIY="+Ky_I_val, true);
+        xhr.send();
       }
 
     </script>
@@ -249,6 +276,10 @@ String processor(const String& var){
     return Kp_speed_val;
   }else if (var == "Ki_speed"){
     return Ki_speed_val;
+  }else if (var == "Ky_P"){
+    return Ky_P_val;
+  }else if (var == "Ky_I"){
+    return Ky_I_val;
   }
   return String();
 }
@@ -258,6 +289,8 @@ String LeftMotorAdjustment_val = String(LeftMotorAdjustment);
 String RightMotorAdjustment_val = String(RightMotorAdjustment);
 String Kp_speed_val = String(Kp_speed);
 String Ki_speed_val = String(Ki_speed);
+String Ky_P_val = String(Ky_P);
+String Ky_I_val = String(Ky_I);
 
 void serverStuff(void){
    // Connect to Wi-Fi
@@ -346,6 +379,34 @@ void serverStuff(void){
     request->send(200, "text/plain", "OK");
   });
 
+  server.on("/kpyaw", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(KPyaw_input)) {
+      inputMessage = request->getParam(KPyaw_input)->value();
+      Ky_P_val = inputMessage;
+      Ky_P = Ky_P_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/kiyaw", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/proportional?KP=<inputMessage>
+    if (request->hasParam(KIyaw_input)) {
+      inputMessage = request->getParam(KIyaw_input)->value();
+      Ky_I_val = inputMessage;
+      Ky_I = Ky_I_val.toFloat();
+    }
+    else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
   server.on("/cmmd", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
     if (request->hasParam("cmd")) {
@@ -374,22 +435,31 @@ void serverStuff(void){
       else if(inputMessage == "1") {
         chosenPathCommands = chosenCommands[0];
         numCommandsChosen = *numCmd[0]; 
+        circuit = false;
       }
       else if(inputMessage == "2") {
         chosenPathCommands = chosenCommands[1];
         numCommandsChosen = *numCmd[1];
+        circuit = false;
       }
       else if(inputMessage == "3") {
         chosenPathCommands = chosenCommands[2];
         numCommandsChosen = *numCmd[2];
+        circuit = false;
       }
       else if(inputMessage == "4") {
         chosenPathCommands = chosenCommands[3];
         numCommandsChosen = *numCmd[3];
+        circuit = false;
       }
       else if(inputMessage == "5") {
         chosenPathCommands = chosenCommands[4];
         numCommandsChosen = *numCmd[4];
+        circuit = true;
+      }
+      else if(inputMessage == "6") {
+        chosenPathCommands = chosenCommands[5];
+        numCommandsChosen = *numCmd[5];
         circuit = true;
       }
     }
