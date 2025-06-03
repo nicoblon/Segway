@@ -240,39 +240,21 @@ float calculateAngle(int dx, int dy){
   return angle;
 }
 
-float calculateAngleCircuit(int dx, int dy, int previousAngle){
-
+float calculateAngleCircuit(int dx, int dy){
   float angle;
-
   angle = atan2(dy, dx)*180/pi;
-
-  if(dy == 0){
-    if(dx < 0){
-      if(previousAngle < 0 && previousAngle > -180) angle = -180;
-      else angle = 180;
-    }else{
-      angle = 0;
-    }
-  }
-  if(dx==0){
-    if(dy<0){
-      if(previousAngle < 90 && previousAngle > -90) angle = -90;
-      else angle = 90;
-    }
-    else{
-      if(previousAngle < 90 && previousAngle > -90) angle = 90;
-      else angle = -90;
-    }
-  }
-
-
-
   return angle;
 }
 
 int calculateDistance(int dx, int dy){
   int distance = sqrt(pow(dx,2) + pow(dy,2));
   return distance;
+}
+
+float normalizeAngle(float angle) {
+    while (angle <= -180) angle += 360;
+    while (angle > 180) angle -= 360;
+    return angle;
 }
 
 void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
@@ -329,13 +311,13 @@ void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct 
     int dy = points[i].y - points[i-1].y;
 
     int distance = calculateDistance(dx, dy);
-    float angle = calculateAngleCircuit(dx, dy, previousAngle);
+    float angle = calculateAngleCircuit(dx, dy);
+    float deltaAngle = normalizeAngle(angle - previousAngle);
 
-    // Storing the commands
-    commands[*numCommands].angle = angle - previousAngle;
+    commands[*numCommands].angle = deltaAngle;
+    previousAngle = angle;
     
     (*numCommands)++;
-    previousAngle = angle;
 
     commands[*numCommands].distance = distance;
     (*numCommands)++;

@@ -102,7 +102,7 @@ extern String MaxSpeed_val;
 
     float timeOverflow=10000;
 
-    float LeftMotorAdjustment = 0.93;
+    float LeftMotorAdjustment = 0.935;
     float RightMotorAdjustment = 0.91;
 
     float D_start = 1000;
@@ -187,7 +187,7 @@ extern String MaxSpeed_val;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
     const int numPoints5 = 25;
-    const int numPoints6 = 9;
+    const int numPoints6 = 25;
 
     int numCommands1 = 0;
     int numCommands2 = 0;
@@ -266,7 +266,9 @@ struct Coordinates path5[numPoints5] = {
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0}, {0,0}
 };
 struct Coordinates path6[numPoints6] = {
-  {0,0}, {195,30}, {195,70}, {45,140}, {-30,225}, {-110,225}, {-140,180},{-95, 20}, {0,0}
+  {0,0}, {215,0}, {215,100}, {45,100}, {-30,230}, {-125,230}, {-140,40},{-100, 0},
+  {160,-5}, {210,60}, {45,120}, {-30,220}, {-135,220}, {-140,100},{-110, 10},    // -10 aux valeurs y à partir du 2ème tour
+  {130,15}, {180,15},{240,50}, {225,90}, {45,130}, {-30,220}, {-110,220}, {-140,170},{-85, 20}, {50,20}
 };
 
 struct Output commands1[2*numPoints1];
@@ -296,7 +298,9 @@ float averageNonZero(float arr[], int size);
 float PI_y_feedback(float Ky_P,float Ky_I, float yaw_ref, float yawIn);
 void serverStuff();
 float calculateAngle(int dx, int dy);
+float calculateAngleCircuit(int dx, int dy);
 int calculateDistance(int dx, int dy);
+float normalizeAngle(float angle);
 void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands);
 void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands);
 void funct_yaw_ref(struct Output command);
