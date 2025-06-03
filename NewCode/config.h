@@ -82,11 +82,11 @@ extern String MaxSpeed_val;
     float K_D = 0; //value that switches between K_D_stable and K_D_move, not web modifiable
     float K_D_stable = 21;
     float K_D_move = 21;
-    float pitch_bias = 1.8; //change depending on center of gravity
+    float pitch_bias = 3; //change depending on center of gravity
     float Kp_P = 100;//0.5;
     float Kp_I = 25;//0.1;
     float Ky_P = 5;//0.5;
-    float Ky_I = 0;//1;
+    float Ky_I = 0.01;//1;
     float MaxSpeed=0.035;
     float MinSpeed=0.02;
     float prevSpeed=0;
@@ -187,7 +187,7 @@ extern String MaxSpeed_val;
     const int numPoints3 = 17;
     const int numPoints4 = 9;
     const int numPoints5 = 25;
-    const int numPoints6 = 25;
+    const int numPoints6 = 28;
 
     int numCommands1 = 0;
     int numCommands2 = 0;
@@ -266,9 +266,9 @@ struct Coordinates path5[numPoints5] = {
   {0,0}, {225,0}, {225,100}, {25,100}, {25,250}, {-125,250}, {-125, 125}, {-125,0}, {0,0}
 };
 struct Coordinates path6[numPoints6] = {
-  {0,0}, {215,0}, {215,100}, {45,100}, {-30,230}, {-125,230}, {-140,40},{-100, 0},
-  {160,-5}, {210,60}, {45,120}, {-30,220}, {-135,220}, {-140,100},{-110, 10},    // -10 aux valeurs y à partir du 2ème tour
-  {130,15}, {180,15},{240,50}, {225,90}, {45,130}, {-30,220}, {-110,220}, {-140,170},{-85, 20}, {50,20}
+  {0,0}, {215,0}, {215,100}, {45,100}, {-30,230}, {-135,230}, {-140,40},{-100, 0},
+  {190,20},  {190,105},{45,130}, {-30,235}, {-135,235}, {-160,200},{-125, 40}, {-90, 10},
+  {190,70}, {190,135},{25,140}, {-20,235}, {-145,245}, {-180,200},{-150, 40}, {-90, 20},{40,20}
 };
 
 struct Output commands1[2*numPoints1];

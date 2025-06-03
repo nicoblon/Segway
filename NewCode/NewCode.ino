@@ -153,7 +153,7 @@ void loop() {
   }
 
   if(circuit){
-    MaxSpeed = 0.045;
+    MaxSpeed = 0.05;
   }else{
     MaxSpeed = 0.025;
   }
