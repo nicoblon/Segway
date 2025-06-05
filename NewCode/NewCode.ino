@@ -152,10 +152,28 @@ void loop() {
     }
   }
 
-  if(circuit){
-    MaxSpeed = 0.05;
-  }else{
+  /*
+  if(settingsPath1){
+    RightMotorAdjustment = 0.91;
+    pitch_bias = 2.5;
+  }else if(settingsPath2){
+    RightMotorAdjustment = 0.88;
+    pitch_bias = 2.8;
+  }else if(settingsPath3){
+    RightMotorAdjustment = 0.96;
+    pitch_bias = 1.85;
     MaxSpeed = 0.025;
+  }*/
+
+  if(circuit){
+    MaxSpeed = 0.058;
+    pitch_bias = 3;
+    RightMotorAdjustment = 0.91;
+  }else{
+    if(!settingsPath3){
+      MaxSpeed = 0.015;
+    }
+    //pitch_bias = 2.2;
   }
 
   if (reset) {

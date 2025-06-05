@@ -180,6 +180,9 @@ extern String MaxSpeed_val;
     bool start = false;
 
     bool circuit = false;
+    bool settingsPath1 = false;
+    bool settingsPath2 = false;
+    bool settingsPath3 = false;
 
     // Path points
     const int numPoints1 = 13;
@@ -267,8 +270,8 @@ struct Coordinates path5[numPoints5] = {
 };
 struct Coordinates path6[numPoints6] = {
   {0,0}, {215,0}, {215,100}, {45,100}, {-30,230}, {-135,230}, {-140,40},{-100, 0},
-  {190,20},  {190,105},{45,130}, {-30,235}, {-135,235}, {-160,200},{-125, 40}, {-90, 10},
-  {190,70}, {190,135},{25,140}, {-20,235}, {-145,245}, {-180,200},{-150, 40}, {-90, 20},{40,20}
+  {190,20}, {190,105}, {35,130}, {-30,225}, {-135,225}, {-170,200},{-130, 40}, {-90, 10},
+  {190,35}, {190,135}, {20,140}, {-20,235}, {-155,245}, {-190,200},{-160, 40}, {-100, 20}, {40,20}
 };
 
 struct Output commands1[2*numPoints1];
