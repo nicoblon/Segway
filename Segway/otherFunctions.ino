@@ -88,7 +88,7 @@ float D_Start(float v_ref, float v_prev) {
 }
 
 // PI controller of the speed w.r.t. a reference position -> calculates the necessary speed to reach the wanted position
-float PI_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed) {
+float PI_decreasing_speed(float x, float x_ref, float K_P_Speed, float K_I_Speed) {
   float error = x_ref - x;
 
   // Stop if close enough to target
