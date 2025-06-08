@@ -293,7 +293,7 @@ extern String MaxSpeed_val;
   float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref);
   int PID_feedback(float pitch_err, float K_P, float K_I, float K_D);
   float D_Start(float v_ref, float v_prev);
-  float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed);
+  float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed);
   void Travel(int x_command, int turn_command);
   void updateSpeedBuffer(float newSpeed);
   float averageNonZero(float arr[], int size);

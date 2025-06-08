@@ -197,7 +197,7 @@ void loop() {
     x_ref_prev = x_ref;
 
     // Calculate reference speed with respect to a reference position
-    refSpeed = P_decreasing_speed(pos, x_ref, average_speed, Kp_speed, Ki_speed, D_stop);
+    refSpeed = P_decreasing_speed(pos, x_ref, average_speed, Kp_speed, Ki_speed);
 
     pitch = ypr.pitch - pitch_bias;  // adjusting pitch with bias
 

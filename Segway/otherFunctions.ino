@@ -87,8 +87,8 @@ float D_Start(float v_ref, float v_prev) {
   return (feedback);
 }
 
-// PID controller of the speed w.r.t. a reference position -> calculates the necessary speed to reach the wanted position
-float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed) {
+// PI controller of the speed w.r.t. a reference position -> calculates the necessary speed to reach the wanted position
+float PI_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed) {
   float error = x_ref - x;
 
   // Stop if close enough to target
@@ -100,8 +100,7 @@ float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, flo
   // Calculating control parameters
   float proportional = Kp_speed * error;
   float integral = Ki_speed * sum_error_speed;
-  float derivative = - D_stop * speed;
-  float feedback = proportional + integral + derivative;
+  float feedback = proportional + integral;
 
   if(abs(feedback) < MaxSpeed){
     sum_error_speed += error;
