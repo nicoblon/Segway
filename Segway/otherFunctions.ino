@@ -1,38 +1,5 @@
 #include "config.h"
 
-void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees) { 
-
-  float sqr = sq(qr); 
-  float sqi = sq(qi); 
-  float sqj = sq(qj); 
-  float sqk = sq(qk); 
-
-  ypr->yaw = atan2(2.0 * (qi * qj + qk * qr), (sqi - sqj - sqk + sqr)); 
-  ypr->pitch = asin(-2.0 * (qi * qk - qj * qr) / (sqi + sqj + sqk + sqr)); 
-  ypr->roll = atan2(2.0 * (qj * qk + qi * qr), (-sqi - sqj + sqk + sqr)); 
-
-  if (degrees){ 
-    ypr->yaw *= RAD_TO_DEG; 
-    ypr->pitch *= RAD_TO_DEG; 
-    ypr->roll *= RAD_TO_DEG; 
-  } 
-}
-
-void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees) { 
-  quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
-} 
-
-void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees) { 
-  quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
-} 
-
-void setReports(sh2_SensorId_t reportType, long report_interval) { 
-  Serial.println("Setting desired reports"); 
-  if (! bno08x.enableReport(reportType, report_interval)) { 
-    Serial.println("Could not enable stabilized remote vector"); 
-  } 
-} 
-
 //basic sign function, it returns 1 if x is positive, and -1 if not. 
 int sgn(int x){ 
   if (x >= 0){ 
@@ -42,13 +9,47 @@ int sgn(int x){
   } 
 } 
 
-//Function which compute the error on position
-//and return the new pitch reference
+// Functions that transform the accelerometer output into degrees
+  void quaternionToEuler(float qr, float qi, float qj, float qk, euler_t* ypr, bool degrees) { 
+
+    float sqr = sq(qr); 
+    float sqi = sq(qi); 
+    float sqj = sq(qj); 
+    float sqk = sq(qk); 
+
+    ypr->yaw = atan2(2.0 * (qi * qj + qk * qr), (sqi - sqj - sqk + sqr)); 
+    ypr->pitch = asin(-2.0 * (qi * qk - qj * qr) / (sqi + sqj + sqk + sqr)); 
+    ypr->roll = atan2(2.0 * (qj * qk + qi * qr), (-sqi - sqj + sqk + sqr)); 
+
+    if (degrees){ 
+      ypr->yaw *= RAD_TO_DEG; 
+      ypr->pitch *= RAD_TO_DEG; 
+      ypr->roll *= RAD_TO_DEG; 
+    } 
+  }
+
+  void quaternionToEulerRV(sh2_RotationVectorWAcc_t* rotational_vector, euler_t* ypr, bool degrees) { 
+    quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
+  } 
+
+  void quaternionToEulerGI(sh2_GyroIntegratedRV_t* rotational_vector, euler_t* ypr, bool degrees) { 
+    quaternionToEuler(rotational_vector->real, rotational_vector->i, rotational_vector->j, rotational_vector->k, ypr, degrees); 
+  } 
+
+// Function for accelerometer -> from previous Segway code
+void setReports(sh2_SensorId_t reportType, long report_interval) { 
+  Serial.println("Setting desired reports"); 
+  if (! bno08x.enableReport(reportType, report_interval)) { 
+    Serial.println("Could not enable stabilized remote vector"); 
+  } 
+} 
+
+// PI controller of the position w.r.t. a reference position
 float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
   float error_pos = pos - pos_ref;
-  if (abs(error_pos) > 1) sum_p_error += error_pos;  //add the current error to the previous one
-  sum_p_error *= 0.98;                               //leaky integrator
-  if (abs(sum_p_error) > 10) {
+  if (abs(error_pos) > 1) sum_p_error += error_pos;  //add the current error to the previous one if the error is greater than 1
+  sum_p_error *= 0.98;                               //leaky integrator -> works kind of like an anti-windup
+  if (abs(sum_p_error) > 10) {                       //constrain the error to not overload the PI control
     sum_p_error = constrain(sum_p_error, -10, 10);
   }
   Kp_prop = Kp_P * error_pos;   //Proportional part
@@ -60,10 +61,11 @@ float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
   return (pitch_cmmd);
 }
 
+// PID controller of the pitch w.r.t. a reference angle
 int PID_feedback(float pitch_err, float K_P, float K_I, float K_D) {
   float error = pitch_err;
-  if (abs(error) > 0.1) sum_error += error;  //add the current error to the previous one
-  sum_error *= 0.98;                         //leaky integrator
+  if (abs(error) > 0.1) sum_error += error;  //add the current error to the previous one if the error is greater than 0.1
+  sum_error *= 0.98;                         //leaky integrator -> works kind of like an anti-windup
 
   K_prop = K_P * error;                //proportional part of the controller
   K_int = K_I * sum_error;             //integral part of the controller
@@ -78,16 +80,14 @@ int PID_feedback(float pitch_err, float K_P, float K_I, float K_D) {
   return (feedback);
 }
 
+// Function that creates an impulse when starting motion
 float D_Start(float v_ref, float v_prev) {
   float error_speed = v_ref - v_prev;
   int feedback = round(D_start * (error_speed / DeltaTime));
   return (feedback);
 }
 
-int Stop(float D_stop, float current_speed, float previous_speed) {
-  return  -sgn(current_speed) * round(D_stop * abs(current_speed));
-}
-
+// PID controller of the speed w.r.t. a reference position -> calculates the necessary speed to reach the wanted position
 float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, float K_I_Speed, float K_D_Speed) {
   float error = x_ref - x;
 
@@ -97,7 +97,7 @@ float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, flo
     return 0;
   }
 
-  // Only accumulate if not saturated (anti-windup)
+  // Calculating control parameters
   float proportional = Kp_speed * error;
   float integral = Ki_speed * sum_error_speed;
   float derivative = - D_stop * speed;
@@ -116,36 +116,8 @@ float P_decreasing_speed(float x, float x_ref, float speed, float K_P_Speed, flo
   return feedback;
 }
 
-void resetVariables() {
-  if (hasReset) {
-    return;
-  }
-  x_ref = position_error;
-  encoder1.setCount(0);
-  encoder2.setCount(0);
-  /*for(int i = 0; i <= 9; i++){
-    updateSpeedBuffer(0);
-  }*/
-  pos_1 = 0;
-  pos_2 = 0;
-  pos = 0;
-  x_ref_prev = x_ref;
-  prev_pos = 0;
-  K_P = K_P_stable;
-  K_D = K_D_stable;
-  //power = 0;
-  //sum_power = 0;
-  //sum_error = 0;
-  //sum_p_error = 0;
-  refSpeed = 0;
-  resetCount++;
-  MaxSpeed = 0.02;
-
-  return;
-}
-
-// Function used to turn
-void Travel(int x_command, int turn_command) {  // instruction to the motors with the command
+// Function for movement, linear and rotational
+void Travel(int x_command, int turn_command) {
   int l = x_command - turn_command;             //left wheel
   int r = x_command + turn_command;             //right wheel
   
@@ -172,7 +144,7 @@ void Travel(int x_command, int turn_command) {  // instruction to the motors wit
   }
 }
 
-//function that updates the oldest term in the speed array
+// Updating average_speed array
 void updateSpeedBuffer(float newSpeed) {
   speedBuffer[speedIndex] = newSpeed;           // Replace oldest value
   speedIndex = (speedIndex + 1) % BUFFER_SIZE;  // Move to next index (circular behavior)
@@ -185,41 +157,26 @@ float averageNonZero(float arr[], int size) {
   return count ? sum / count : 0.0;
 }
 
-// Function PI_y_feedback that compute and define the turn command
+// PI controller of the yaw w.r.t a reference angle
 float PI_y_feedback(float Ky_P, float Ky_I, float yaw_ref, float yawIn) {
   float error_yaw = yaw_ref - yawIn;
   if (abs(error_yaw) > 0.1) sum_y_error += error_yaw;  //add the current error to the previous one
   sum_y_error *= 0.9;     
-
-  /*if (abs(sum_y_error)>10){
-    sum_y_error=constrain(sum_y_error,-10,10);
-  }*/
 
   Ky_prop = Ky_P * error_yaw;
   Ky_int = Ky_I * sum_y_error;
   int feedback = round(Ky_prop + Ky_int);
   if (abs(feedback) > max_v) feedback = sgn(feedback) * max_v;  //limit the feedback from min -255 to the max 255
   return feedback;
-  //if (abs(yaw_cmmd)>180) yaw_cmmd=180
 }
 
+// Function that calculates the angle between 2 points for the star-shaped paths
 float calculateAngle(int dx, int dy){
-  //float angleAbs;
   float angle = 0;
-
 
   if(dy != 0){
     angle = atan2(dy, dx) * 180 / pi;
-  }
-  /*else if(dx==0){
-      if(dy<0){
-        angle=-90;
-      }
-      else{
-        angle=90;
-      }
-  }*/
-  else{
+  }else{
     if(dx < 0){
       angle = 180;
     }
@@ -227,63 +184,63 @@ float calculateAngle(int dx, int dy){
       angle = 0;
     }
   }
- 
-
-  /*if(!circuit){
-    if(angle < -180){
-      angle += 360;
-    }else if(angle > 180){
-      angle -= 360;
-    }
-  }*/
 
   return angle;
 }
 
+// Function that calculates the angle between 2 points for the circuit.
+  // this is a different function than the paths because we wanted to avoid changing the movement direction from forwards to backwards to avoid losing time
 float calculateAngleCircuit(int dx, int dy){
   float angle;
   angle = atan2(dy, dx)*180/pi;
   return angle;
 }
 
+// Function to calculate the distance between 2 points 
 int calculateDistance(int dx, int dy){
   int distance = sqrt(pow(dx,2) + pow(dy,2));
   return distance;
 }
 
+// Normalization of an angle between -180 and 180 degrees
 float normalizeAngle(float angle) {
     while (angle <= -180) angle += 360;
     while (angle > 180) angle -= 360;
     return angle;
 }
 
+// Creating the list of commands to follow the star-shaped paths, angle and distance
 void generateCommands(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
+  // the x-axis is facing in the direction of the Segway (forward motion)
+  // the y-axis is +90° w.r.t. the x-axis (counter-clockwise)
 
   //initialization
   commands[0].angle = 0; // Segway aligned with the reference axis (x)
 	commands[1].distance = 0; // not relevant
+  
+  *numCommands = 2; // position in the commands array -> starts at 2 because the initial angle and distance values are set to zero
 
-  *numCommands = 2;
-  struct Coordinates currentPosition = points[0];
+  struct Coordinates currentPosition = points[0]; // setting the current position to the start of the path
   float previousAngle = 0;
 
   for(int i = 1; i < numPoints; i++){
+    // Calculating the distances over the x and y axes between 2 points
     int dx = points[i].x - points[i-1].x;
     int dy = points[i].y - points[i-1].y;
 
+    // Finding the distance and the angle between the points
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngle(dx, dy);
 
+    // if the angle is not contained in [-90, 90] then make the Segway go backwards to avoid making large turns
     if((angle - previousAngle) < -90){
       distance *= -1;
       angle += 180;
     }
-    
     if((angle - previousAngle) > 90){
       distance *= -1;
       angle -= 180;
     }
-    
 
     // Storing the commands
     commands[*numCommands].angle = angle - previousAngle;
@@ -295,25 +252,32 @@ void generateCommands(struct Coordinates points[], int numPoints, struct Output 
     (*numCommands)++;
   }
 }
-
+// Creating the list of commands to follow the circuit, angle and distance
+  // Used another function to make sure the Segway is always facing forwards, to avoid losing time turning around and changing the direction of motion
 void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct Output commands[], int *numCommands){
+  // the x-axis is facing in the direction of the Segway (forward motion)
+  // the y-axis is +90° w.r.t. the x-axis (counter-clockwise)
 
   //initialization
   commands[0].angle = 0; // Segway aligned with the reference axis (x)
 	commands[1].distance = 0; // not relevant
 
-  *numCommands = 2;
-  struct Coordinates currentPosition = points[0];
+  *numCommands = 2; // position in the commands array -> starts at 2 because the initial angle and distance values are set to zero
+
+  struct Coordinates currentPosition = points[0]; // setting the current position to the starting point of the circuit
   float previousAngle = 0;
 
   for(int i = 1; i < numPoints; i++){
+    // Calculating the distances over the x and y axes between 2 points
     int dx = points[i].x - points[i-1].x;
     int dy = points[i].y - points[i-1].y;
 
+    // Finding the distance and the angle between the points, making sure that the Segway will always move forward
     int distance = calculateDistance(dx, dy);
     float angle = calculateAngleCircuit(dx, dy);
     float deltaAngle = normalizeAngle(angle - previousAngle);
 
+    // Storing the commands
     commands[*numCommands].angle = deltaAngle;
     previousAngle = angle;
     
@@ -324,10 +288,12 @@ void generateCommandsCircuit(struct Coordinates points[], int numPoints, struct 
   }
 }
 
-void funct_yaw_ref(struct Output command){      // doesn't really need to be a function honestly
-  turn_cmmd += command.angle * LeftMotorAdjustment;
+// Updating the reference yaw angle with the commands generated
+void funct_yaw_ref(struct Output command){      
+  turn_cmmd += command.angle * angleAdjustmentFactor;
 }
 
-void funct_pos_ref(struct Output command){     // doesn't really need to be a function honestly
-  x_ref += command.distance * RightMotorAdjustment;
+// Updating the reference position with the commands generated
+void funct_pos_ref(struct Output command){
+  x_ref += command.distance * distanceAdjustmentFactor;
 }
