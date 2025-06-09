@@ -45,8 +45,8 @@ void setReports(sh2_SensorId_t reportType, long report_interval) {
 } 
 
 // PI controller of the position w.r.t. a reference position
-float PI_p_feedback(float Kp_P, float Kp_I, float pos, float pos_ref) {
-  float error_pos = pos - pos_ref;
+float PI_p_feedback(float Kp_P, float Kp_I, float speed, float speed_ref) {
+  float error_pos = speed - speed_ref;
   if (abs(error_pos) > 1) sum_p_error += error_pos;  //add the current error to the previous one if the error is greater than 1
   sum_p_error *= 0.98;                               //leaky integrator -> works kind of like an anti-windup
   if (abs(sum_p_error) > 10) {                       //constrain the error to not overload the PI control
