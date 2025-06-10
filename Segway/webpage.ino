@@ -215,7 +215,7 @@ const char index_html[] PROGMEM = R"rawliteral(
             <input type="number" id="PB" value="%BB%" min="-45" max="45" step="0.1"> 
             <button onclick="implement_B()">Submit</button></p>
             
-            <p><span id="textAngleAdjustmentFactorVal"Angle Adj. (current: %angleAdjustmentFactor%) </span>
+            <p><span id="textAngleAdjustmentFactorVal">Angle Adj. (current: %angleAdjustmentFactor%) </span>
             <input type="number" id="AngAd" value="%angleAdjustmentFactor%" min="0" max="1" step="0.01"> 
             <button onclick="implement_angleAdjustmentFactor()">Submit</button></p>
             
